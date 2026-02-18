@@ -8,13 +8,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/img/favicon.png">
     {% block head %}{% endblock %}
 </head>
 <body>
     <header class="header">
         <div class="container">
             <div class="header-content">
-                <a href="/" class="logo">Rezumate</a>
+                <a href="/" class="logo">
+                    <img src="/static/img/logo.png" alt="Rezumate Logo" class="logo-img">
+                    <span>Rezumate</span>
+                </a>
                 <nav class="nav">
                     <a href="/score" class="nav-link {% if active_tab == 'score' %}active{% endif %}">Score</a>
                     <a href="/compare" class="nav-link {% if active_tab == 'compare' %}active{% endif %}">Compare</a>
