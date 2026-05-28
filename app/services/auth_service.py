@@ -16,7 +16,7 @@ async def get_current_user(authorization: str = Header(None), db: Session = Depe
     
     # MOCK implementation: Use a hardcoded dummy user UUID for testing.
     # Replace this with actual supabase.auth.get_user(token) later.
-    dummy_uuid = "00000000-0000-0000-0000-000000000000"
+    dummy_uuid = UUID(int=0)
     
     user = db.query(User).filter(User.id == dummy_uuid).first()
     if not user:

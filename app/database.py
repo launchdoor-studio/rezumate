@@ -2,8 +2,7 @@ import os
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Uuid, JSON
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy import create_engine
 
@@ -24,7 +23,7 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(Uuid, primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     plan_tier = Column(String, default="free") # 'free' or 'pro'
     analyses_count_today = Column(Integer, default=0)
@@ -39,11 +38,11 @@ class User(Base):
 class Resume(Base):
     __tablename__ = "resumes"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(Uuid, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(Uuid, ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=False)
     original_file_url = Column(String, nullable=True)
-    parsed_content = Column(JSONB if not DATABASE_URL.startswith("sqlite") else Text, nullable=True)
+    parsed_content = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -54,10 +53,10 @@ class Resume(Base):
 class JobDescription(Base):
     __tablename__ = "job_descriptions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(Uuid, primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(Uuid, ForeignKey("users.id"), nullable=False)
     raw_text = Column(Text, nullable=False)
-    extracted_keywords = Column(JSONB if not DATABASE_URL.startswith("sqlite") else Text, nullable=True)
+    extracted_keywords = Column(JSON, nullable=True)
 
     user = relationship("User", back_populates="job_descriptions")
     variants = relationship("ResumeVariant", back_populates="job_description")
@@ -66,13 +65,13 @@ class JobDescription(Base):
 class ResumeVariant(Base):
     __tablename__ = "resume_variants"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    resume_id = Column(UUID(as_uuid=True), ForeignKey("resumes.id"), nullable=False)
-    job_description_id = Column(UUID(as_uuid=True), ForeignKey("job_descriptions.id"), nullable=False)
+    id = Column(Uuid, primary_key=True, default=uuid.uuid4, index=True)
+    resume_id = Column(Uuid, ForeignKey("resumes.id"), nullable=False)
+    job_description_id = Column(Uuid, ForeignKey("job_descriptions.id"), nullable=False)
     variant_name = Column(String, nullable=False)
-    tailored_content = Column(JSONB if not DATABASE_URL.startswith("sqlite") else Text, nullable=True)
+    tailored_content = Column(JSON, nullable=True)
     ats_score = Column(Integer, nullable=True)
-    analysis_feedback = Column(JSONB if not DATABASE_URL.startswith("sqlite") else Text, nullable=True)
+    analysis_feedback = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

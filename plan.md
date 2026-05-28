@@ -111,15 +111,10 @@ Backend improvements:
 
 ### Storage
 
-For the MVP:
-
-- Store extracted text, job description, structured result JSON, score, and timestamps.
-- Do not store raw uploaded files unless there is a clear user-facing reason.
-
-Later:
-
-- Add object storage for raw resumes and exported PDFs.
-- Add user accounts before storing long-term personal resume files.
+For the MVP and beyond:
+- **No File Storage:** To maximize user privacy and minimize infrastructure costs, raw uploaded PDFs/DOCXs are processed in memory and immediately discarded.
+- **Data Persistence:** Only the extracted raw text, job description text, structured analysis JSON, and tailored variants are stored in the PostgreSQL database.
+- **Exporting:** Tailored resumes are generated as PDFs on the fly and streamed directly to the user without being saved to cloud storage.
 
 ## 6. Data Model
 

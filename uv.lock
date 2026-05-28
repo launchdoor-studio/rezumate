@@ -1318,6 +1318,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "aiofiles" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "langchain-groq" },
     { name = "pdfplumber" },
@@ -1335,6 +1336,7 @@ dependencies = [
 requires-dist = [
     { name = "aiofiles", specifier = "==24.1.0" },
     { name = "fastapi", specifier = "==0.115.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = "==3.1.4" },
     { name = "langchain-groq", specifier = "==0.2.0" },
     { name = "pdfplumber", specifier = "==0.11.4" },
