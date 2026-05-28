@@ -1,88 +1,46 @@
 from functools import lru_cache
+from typing import List
 from langchain_groq import ChatGroq
-from app.services.schemas import AnalysisResult, ComparisonResult, RankingResult
-
+from pydantic import BaseModel, Field
 
 MODEL_NAME = "llama-3.3-70b-versatile"
-SCORE_PROMPT_VERSION = "score-v1"
 
+class RewriteOptions(BaseModel):
+    rewritten_bullets: List[str] = Field(description="3 options of rewritten, optimized bullet points.")
 
 @lru_cache(maxsize=1)
 def get_model():
+    # Use Llama 3 or fallback to whatever groq provides.
     return ChatGroq(model=MODEL_NAME, temperature=0.7)
 
-
-def get_ai_response(job_description: str, resume_content: str) -> AnalysisResult:
-    prompt = f"""
-You are a calibrated ATS scanner combined with an expert Technical Sourcer. 
-Analyze the following resume against the job description and return a structured analysis.
-
-Job Description:
-{job_description}
-
-Resume Content:
-{resume_content}
-"""
-    structured_llm = get_model().with_structured_output(AnalysisResult)
-    return structured_llm.invoke(prompt)
-
-
-def get_comparison_response(job_description: str, resume1: str, resume2: str) -> ComparisonResult:
-    prompt = f"""
-Compare two resumes against the job description. Be objective and critical.
-
-Job Description:
-{job_description}
-
-Resume 1:
-{resume1}
-
-Resume 2:
-{resume2}
-"""
-    structured_llm = get_model().with_structured_output(ComparisonResult)
-    return structured_llm.invoke(prompt)
-
-
-def get_ranking_response(job_description: str, resumes: list[dict]) -> RankingResult:
-    resumes_text = ""
-    for i, resume in enumerate(resumes, 1):
-        resumes_text += f"\n--- Resume {i}: {resume['filename']} ---\n{resume['content']}\n"
+def rewrite_bullet_point(original_bullet: str, job_title: str = None, focus_keywords: list = None) -> list[str]:
+    """
+    Rewrites a single resume bullet point using an LLM.
+    Returns 3 different variations of the rewritten bullet.
+    """
+    context = ""
+    if job_title:
+        context += f"Target Job Title: {job_title}\n"
+    if focus_keywords:
+        context += f"Try to naturally include some of these keywords if they fit: {', '.join(focus_keywords)}\n"
 
     prompt = f"""
-Rank all provided resumes against the job description.
+You are an expert technical resume writer. Your task is to rewrite the given resume bullet point to make it more impactful, concise, and ATS-friendly.
 
-Job Description:
-{job_description}
+Guidelines:
+- Start with a strong action verb.
+- Ensure the bullet describes the *outcome* or *measurable impact*, not just the task.
+- Keep it to a single sentence, concise but descriptive.
+- Do NOT fabricate metrics, but if the original implies an outcome, make it sound professional.
+- Do NOT use pronouns like "I", "We", "My".
 
-Resumes to Rank:
-{resumes_text}
+Original Bullet:
+{original_bullet}
+
+{context}
+
+Provide 3 distinct rewrite options.
 """
-    structured_llm = get_model().with_structured_output(RankingResult)
-    return structured_llm.invoke(prompt)
-
-
-def get_chat_response(job_description: str, resume_content: str, chat_history: list[dict], user_message: str) -> str:
-    history_text = ""
-    for msg in chat_history:
-        role = "User" if msg["role"] == "user" else "Assistant"
-        history_text += f"{role}: {msg['content']}\n"
-
-    full_prompt = f"""
-You are a professional career coach and resume expert. You are helping a user improve their resume for a specific job.
-
-Job Description:
-{job_description}
-
-User's Resume:
-{resume_content}
-
-Previous Conversation:
-{history_text}
-
-User's New Message: {user_message}
-
-Provide helpful, actionable advice. Be specific and reference the actual content from the resume and job description. Keep responses concise but thorough.
-"""
-    response = get_model().invoke(full_prompt)
-    return response.content
+    structured_llm = get_model().with_structured_output(RewriteOptions)
+    result = structured_llm.invoke(prompt)
+    return result.rewritten_bullets

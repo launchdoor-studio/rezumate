@@ -1,34 +1,36 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
-class SkillMatch(BaseModel):
-    skill: str = Field(description="The name of the skill or requirement")
-    match_type: str = Field(description="One of: 'Full', 'Partial', 'Missing'")
-    evidence: Optional[str] = Field(description="Brief evidence from the resume (only if Full or Partial match)")
+# --- Request/Response Models ---
 
-class AnalysisResult(BaseModel):
-    match_percentage: int = Field(description="The overall match percentage (0-100)")
-    fit_level: str = Field(description="Fit level: Strong Match (80%+), Moderate (65-79%), Weak (50-64%), Poor (<50%)")
-    matched_skills: List[SkillMatch] = Field(description="List of skills that were found or partially found")
-    missing_skills: List[str] = Field(description="List of key requirements that are missing")
-    strengths: List[str] = Field(description="Key strengths of the candidate for this role")
-    improvement_suggestions: List[str] = Field(description="Specific, actionable advice to improve the resume")
-
-class ComparisonResult(BaseModel):
-    winner: str = Field(description="Resume 1, Resume 2, or Tie")
-    resume1_score: int
-    resume2_score: int
-    resume1_summary: str
-    resume2_summary: str
-    key_differentiators: List[str]
-    recommendation: str
-
-class RankingItem(BaseModel):
+class UploadResponse(BaseModel):
+    success: bool
     filename: str
-    match_percentage: int
-    strengths: List[str]
-    gaps: List[str]
+    extracted_text: str
+    warnings: List[str]
+    character_count: int
 
-class RankingResult(BaseModel):
-    rankings: List[RankingItem]
-    overall_summary: str
+class AnalyzeRequest(BaseModel):
+    resume_text: str = Field(description="The extracted raw text of the resume")
+    job_description: str = Field(description="The raw text of the job description")
+
+class AnalyzeResponse(BaseModel):
+    success: bool
+    score: int
+    matched_keywords: List[str]
+    missing_keywords: List[str]
+    weak_bullets: List[str]
+    bullets_without_measurable_impact: List[str]
+    formatting_warnings: List[str]
+    component_scores: Dict[str, int]
+
+class RewriteBulletRequest(BaseModel):
+    original_bullet: str
+    job_title: Optional[str] = None
+    focus_keywords: Optional[List[str]] = None
+
+class RewriteBulletResponse(BaseModel):
+    success: bool
+    original_bullet: str
+    rewritten_bullets: List[str]
+    ai_model_name: str
