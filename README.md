@@ -1,35 +1,56 @@
 <div align="center">
-  <img src="app/static/img/favicon.png" alt="Rezumate Logo" width="200" height="200">
+  <img src="app/static/img/favicon.png" alt="Rezumate Logo" width="100" height="100">
   
   # Rezumate
   
-  A web-based tool for analyzing, comparing, and ranking resumes against job descriptions using AI.
+  **From Raw Resume to Hired.** A professional-grade, AI-powered tool for analyzing, comparing, and ranking resumes against job descriptions.
 
   ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
   ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-  ![Jinja2](https://img.shields.io/badge/UI-Jinja2-B41717?logo=jinja&logoColor=white)
+  ![Turso](https://img.shields.io/badge/Database-Turso-00A3E0?logo=sqlite&logoColor=white)
+  ![Vercel](https://img.shields.io/badge/Deployment-Vercel-000000?logo=vercel&logoColor=white)
   ![Groq](https://img.shields.io/badge/AI-Groq-F55036)
-  ![License](https://img.shields.io/badge/License-MIT-green)
 </div>
 
-## About
+## ✨ Pro Features
+- **🎯 Precision Scoring:** Calibrated ATS scanning using Llama 3.3 70B.
+- **📊 Structured Dashboard:** Visualizes skill gaps, strengths, and fit levels.
+- **📄 High-Fidelity Parsing:** Layout-aware PDF extraction with `pdfplumber`.
+- **💾 Persistent History:** Powered by **Turso** (SQLite at the edge) for zero-cost persistence.
+- **🤖 Contextual Chat:** Deep-dive into resume improvements with a persistent AI coach.
 
-Rezumate simplifies the hiring process by providing AI-powered resume analysis. Whether you're a recruiter screening candidates or a job seeker optimizing your resume, Rezumate gives you actionable insights based on job requirements.
+## 🚀 Quick Start (Zero-Cost Deployment)
 
-## Features
+### 1. Prerequisites
+- [Groq API Key](https://console.groq.com/)
+- [Turso CLI](https://docs.turso.tech/cli) (Optional for local, required for prod)
 
-### Score Resume
-Upload a resume and job description to receive a detailed analysis. Get scores across multiple criteria along with specific feedback on strengths and areas for improvement.
+### 2. Local Setup
+```bash
+# Install dependencies
+uv sync
 
-### Compare Resumes
-Compare two resumes side-by-side against the same job description. Identify which candidate is a better fit and understand the key differences between them.
+# Run the application
+uv run dev
+```
+The app will automatically use a local `rezumate.db` if no `DATABASE_URL` is provided.
 
-### Rank Resumes
-Bulk upload multiple resumes and get them ranked based on their alignment with a job description. Useful for quickly shortlisting candidates from a large applicant pool.
+### 3. Production Deployment (Vercel + Turso)
+1. **Create Turso DB:** `turso db create rezumate`
+2. **Get Credentials:** 
+   - URL: `turso db show rezumate --url`
+   - Token: `turso db tokens create rezumate`
+3. **Deploy to Vercel:**
+   - Push to GitHub.
+   - Connect to Vercel.
+   - Add Env Vars: `DATABASE_URL` (your Turso URL) and `GROQ_API_KEY`.
 
-### Chat Assistant
-After scoring a resume, use the chat feature to ask questions and get personalized suggestions for improving the resume based on the analysis results.
+## 🛠 Tech Stack
+- **Backend:** FastAPI (Python)
+- **Database:** Turso (LibSQL/SQLite)
+- **AI:** LangChain + Groq (Llama 3.3 70B)
+- **Frontend:** Jinja2 + Vanilla JS + CSS (Neo-Brutalist Design)
+- **Deployment:** Vercel
 
 ## License
-
-This project is licensed under the MIT License.
+MIT License

@@ -30,7 +30,7 @@
                 <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('resumesInput').click()">
                     Upload Resumes
                 </button>
-                <input type="file" id="resumesInput" class="upload-input" accept=".pdf,.doc,.docx" multiple />
+                <input type="file" id="resumesInput" class="upload-input" accept=".pdf,application/pdf" multiple />
             </div>
 
             <div id="fileList" class="file-list"></div>
@@ -131,7 +131,7 @@
     });
 
     function handleFiles(files) {
-        const validFiles = files.filter(f => f.name.match(/\.(pdf|doc|docx)$/i));
+        const validFiles = files.filter(f => f.name.match(/\.pdf$/i));
         if (validFiles.length !== files.length) {
             showError('Some files were skipped. Only PDF files are supported.');
         }

@@ -35,7 +35,7 @@
                 <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('resumeInput').click()">
                     Upload
                 </button>
-                <input type="file" id="resumeInput" class="upload-input" accept=".pdf,.doc,.docx" />
+                <input type="file" id="resumeInput" class="upload-input" accept=".pdf,application/pdf" />
             </div>
 
             <div id="fileDisplay" class="file-display">
@@ -179,7 +179,7 @@
     });
 
     function handleFile(file) {
-        if (!file.name.match(/\.(pdf|doc|docx)$/i)) {
+        if (!file.name.match(/\.pdf$/i)) {
             showError('Please upload a PDF file');
             return;
         }

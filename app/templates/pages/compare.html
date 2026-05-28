@@ -29,7 +29,7 @@
                     <p class="upload-box-title">Resume 1</p>
                     <p class="upload-box-subtitle">Upload a PDF file</p>
                     <button type="button" class="btn btn-primary btn-sm">Upload Resume</button>
-                    <input type="file" id="resume1Input" class="upload-input" accept=".pdf,.doc,.docx" />
+                    <input type="file" id="resume1Input" class="upload-input" accept=".pdf,application/pdf" />
                 </div>
 
                 <div id="uploadBox2" class="upload-box" onclick="document.getElementById('resume2Input').click()">
@@ -41,7 +41,7 @@
                     <p class="upload-box-title">Resume 2</p>
                     <p class="upload-box-subtitle">Upload a PDF file</p>
                     <button type="button" class="btn btn-primary btn-sm">Upload Resume</button>
-                    <input type="file" id="resume2Input" class="upload-input" accept=".pdf,.doc,.docx" />
+                    <input type="file" id="resume2Input" class="upload-input" accept=".pdf,application/pdf" />
                 </div>
             </div>
         </div>
@@ -152,7 +152,7 @@
     }
 
     function handleFile(file, box, setFile, fileNum) {
-        if (!file.name.match(/\.(pdf|doc|docx)$/i)) {
+        if (!file.name.match(/\.pdf$/i)) {
             showError('Please upload a PDF file');
             return;
         }
