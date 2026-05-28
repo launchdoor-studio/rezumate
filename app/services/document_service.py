@@ -1,8 +1,7 @@
 import io
 from dataclasses import dataclass, field
-
+import docx
 import pdfplumber
-
 
 @dataclass
 class ExtractionResult:
@@ -11,7 +10,6 @@ class ExtractionResult:
     warnings: list[str] = field(default_factory=list)
     page_count: int = 0
     character_count: int = 0
-
 
 def extract_pdf_text(pdf_bytes: bytes) -> ExtractionResult:
     text_parts: list[str] = []
@@ -37,6 +35,36 @@ def extract_pdf_text(pdf_bytes: bytes) -> ExtractionResult:
         )
 
     text = normalize_resume_text("\n\n".join(text_parts))
+    return evaluate_extracted_text(text, warnings, page_count)
+
+def extract_docx_text(docx_bytes: bytes) -> ExtractionResult:
+    text_parts: list[str] = []
+    warnings: list[str] = []
+    
+    try:
+        doc = docx.Document(io.BytesIO(docx_bytes))
+        for para in doc.paragraphs:
+            if para.text.strip():
+                text_parts.append(para.text.strip())
+        
+        # Simple extraction of table data which is often used in resumes
+        for table in doc.tables:
+            for row in table.rows:
+                row_data = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                if row_data:
+                    text_parts.append(" | ".join(row_data))
+                    
+    except Exception:
+        return ExtractionResult(
+            text="",
+            status="failed",
+            warnings=["Could not read this DOCX file. Please ensure it is a valid Word document."],
+        )
+
+    text = normalize_resume_text("\n\n".join(text_parts))
+    return evaluate_extracted_text(text, warnings, 0) # Page count not easily available for DOCX
+
+def evaluate_extracted_text(text: str, warnings: list[str], page_count: int) -> ExtractionResult:
     character_count = len(text)
 
     if not text:
@@ -59,7 +87,6 @@ def extract_pdf_text(pdf_bytes: bytes) -> ExtractionResult:
         character_count=character_count,
     )
 
-
 def normalize_resume_text(text: str) -> str:
     lines = [" ".join(line.split()) for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
     normalized_lines: list[str] = []
@@ -74,7 +101,3 @@ def normalize_resume_text(text: str) -> str:
         previous_blank = is_blank
 
     return "\n".join(normalized_lines).strip()
-
-
-def extract_text_from_pdf(pdf_bytes: bytes) -> str:
-    return extract_pdf_text(pdf_bytes).text

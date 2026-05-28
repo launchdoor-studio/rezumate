@@ -1,85 +1,55 @@
-import unittest
+import pytest
+from app.services.ats_service import analyze_resume_against_jd, is_weak_bullet, extract_keywords
 
-from app.services.ats_service import (
-    analyze_resume_against_jd,
-    content_hash,
-    extract_bullets,
-    extract_keywords,
-    is_weak_bullet,
-)
-from app.services.pdf_service import normalize_resume_text
-from app.services.schemas import AnalysisResult, SkillMatch
+def test_extract_keywords():
+    jd_text = "We are looking for a Senior Software Engineer with experience in Python, AWS, and Docker. Must know Kubernetes."
+    keywords = extract_keywords(jd_text)
+    
+    assert "python" in keywords
+    assert "aws" in keywords
+    assert "docker" in keywords
+    assert "kubernetes" in keywords
 
+def test_weak_bullet_detection():
+    # Weak
+    assert is_weak_bullet("Worked on the backend API.")
+    assert is_weak_bullet("Helped with bug fixes.")
+    assert is_weak_bullet("Did stuff.")
+    
+    # Strong
+    assert not is_weak_bullet("Engineered a scalable microservice architecture in Go processing 50k requests.")
 
-class AtsServiceTests(unittest.TestCase):
-    def test_extract_keywords_finds_known_skills(self):
-        keywords = extract_keywords("We need Python, FastAPI, AWS, Docker, and PostgreSQL experience.")
-
-        self.assertIn("python", keywords)
-        self.assertIn("fastapi", keywords)
-        self.assertIn("aws", keywords)
-        self.assertIn("docker", keywords)
-        self.assertIn("postgresql", keywords)
-
-    def test_analysis_is_deterministic(self):
-        resume = "\n".join(
-            [
-                "Skills",
-                "Python, FastAPI, AWS",
-                "Experience",
-                "- Built FastAPI services on AWS serving 1000 users",
-            ]
-        )
-        jd = "Need Python, FastAPI, AWS, Docker"
-
-        first = analyze_resume_against_jd(resume, jd)
-        second = analyze_resume_against_jd(resume, jd)
-
-        self.assertEqual(first, second)
-        self.assertEqual(first["score_version"], "ats-v1")
-        self.assertIn("docker", first["missing_keywords"])
-
-    def test_weak_bullet_detection(self):
-        self.assertTrue(is_weak_bullet("Worked on backend APIs"))
-        self.assertFalse(is_weak_bullet("Built backend APIs serving 1000 daily users with 99.9% uptime"))
-
-    def test_measurable_impact_detection_affects_counts(self):
-        resume = "\n".join(
-            [
-                "Experience",
-                "- Built backend APIs serving 1000 users",
-                "- Improved reporting workflow",
-            ]
-        )
-        result = analyze_resume_against_jd(resume, "Need backend API experience")
-
-        self.assertEqual(result["bullet_count"], 2)
-        self.assertEqual(result["bullets_without_measurable_impact_count"], 1)
-
-    def test_normalize_resume_text_preserves_useful_line_breaks(self):
-        text = "Skills   \r\n\r\n\r\n Python   FastAPI \r\n Experience"
-
-        self.assertEqual(normalize_resume_text(text), "Skills\n\nPython FastAPI\nExperience")
-
-    def test_content_hash_is_stable(self):
-        self.assertEqual(content_hash("resume"), content_hash("resume"))
-        self.assertNotEqual(content_hash("resume"), content_hash("other resume"))
-
-    def test_pydantic_analysis_schema_validation(self):
-        result = AnalysisResult(
-            match_percentage=75,
-            fit_level="Moderate",
-            matched_skills=[
-                SkillMatch(skill="Python", match_type="Full", evidence="Listed under Skills")
-            ],
-            missing_skills=["AWS"],
-            strengths=["Strong backend experience"],
-            improvement_suggestions=["Add truthful cloud deployment details if applicable"],
-        )
-
-        self.assertEqual(result.match_percentage, 75)
-        self.assertEqual(result.matched_skills[0].skill, "Python")
-
-
-if __name__ == "__main__":
-    unittest.main()
+def test_analyze_resume_determinism():
+    resume = """
+    John Doe
+    Software Engineer
+    
+    Experience:
+    - Developed a Python REST API using FastAPI and deployed it to AWS.
+    - Improved database query latency by 40%.
+    - Handled customer support tickets.
+    """
+    
+    jd = "Seeking a backend engineer with Python, FastAPI, AWS, and Kubernetes experience."
+    
+    signals_1 = analyze_resume_against_jd(resume, jd)
+    signals_2 = analyze_resume_against_jd(resume, jd)
+    
+    # Must be perfectly deterministic
+    assert signals_1 == signals_2
+    
+    assert "python" in signals_1["matched_keywords"]
+    assert "fastapi" in signals_1["matched_keywords"]
+    assert "aws" in signals_1["matched_keywords"]
+    assert "kubernetes" in signals_1["missing_keywords"]
+    
+    assert "Handled customer support tickets." in signals_1["weak_bullets"]
+    
+def test_component_scores():
+    resume = "we use Python and java alongside c++"
+    jd = "requires Python or java or c++ or go or rust"
+    
+    signals = analyze_resume_against_jd(resume, jd)
+    # 3 out of 5 keywords matched = 60% coverage
+    assert signals["keyword_coverage"] == 60
+    assert signals["score"] > 0

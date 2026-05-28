@@ -1,21 +1,26 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
+from datetime import datetime
+from uuid import UUID
 
 # --- Request/Response Models ---
 
 class UploadResponse(BaseModel):
     success: bool
     filename: str
+    resume_id: UUID
     extracted_text: str
     warnings: List[str]
     character_count: int
 
 class AnalyzeRequest(BaseModel):
-    resume_text: str = Field(description="The extracted raw text of the resume")
+    resume_id: UUID = Field(description="The UUID of the previously uploaded resume")
+    resume_text: str = Field(description="The extracted raw text of the resume (can be modified by user before sending)")
     job_description: str = Field(description="The raw text of the job description")
 
 class AnalyzeResponse(BaseModel):
     success: bool
+    variant_id: UUID
     score: int
     matched_keywords: List[str]
     missing_keywords: List[str]
@@ -34,3 +39,22 @@ class RewriteBulletResponse(BaseModel):
     original_bullet: str
     rewritten_bullets: List[str]
     ai_model_name: str
+
+class VariantSummary(BaseModel):
+    id: UUID
+    resume_id: UUID
+    variant_name: str
+    ats_score: Optional[int]
+    created_at: datetime
+    updated_at: datetime
+
+class HistoryResponse(BaseModel):
+    success: bool
+    variants: List[VariantSummary]
+
+class AcceptRewriteRequest(BaseModel):
+    original_bullet: str
+    rewritten_bullet: str
+
+class ExportRequest(BaseModel):
+    variant_id: UUID
