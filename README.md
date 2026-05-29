@@ -47,10 +47,22 @@ The app will automatically use a local `rezumate.db` if no `DATABASE_URL` is pro
 
 ## 🛠 Tech Stack
 - **Backend:** FastAPI (Python)
-- **Database:** Turso (LibSQL/SQLite)
+- **Database:** PostgreSQL in production, SQLite fallback for local dev
 - **AI:** LangChain + Groq (Llama 3.3 70B)
-- **Frontend:** Jinja2 + Vanilla JS + CSS (Neo-Brutalist Design)
-- **Deployment:** Vercel
+- **Mobile:** Expo + React Native
+
+## 📱 Mobile App
+```bash
+# Backend, from repo root
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Mobile, from another terminal
+cd mobile
+npm install
+npm run ios
+```
+
+The mobile app uses `EXPO_PUBLIC_API_BASE_URL` from `mobile/.env`. For the iOS simulator on the same Mac, use `http://127.0.0.1:8000`.
 
 ## License
 MIT License

@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Rezumate",
+    "slug": "rezumate",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "rezumate",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#F6F2FF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.launchdoor.rezumate"
+    },
+    "android": {
+      "package": "com.launchdoor.rezumate"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "local-dev"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}

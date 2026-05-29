@@ -13,3 +13,10 @@ rezumate.db
 .env
 .env.*
 !.env.example
+
+node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/.env
+mobile/.env.*
+!mobile/.env.example

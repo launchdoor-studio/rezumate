@@ -30,29 +30,29 @@ The API layer is fully robust, deterministic, and ready for frontend integration
 
 The entire mobile application needs to be scaffolded and wired up to the FastAPI backend.
 
-- [ ] **Scaffolding:** Initialize Expo project with NativeWind (Tailwind), React Navigation, and Zustand.
-- [ ] **Auth Flow:** Implement Supabase Auth (Email/Password or OAuth) screens (Login, Signup).
+- [x] **Scaffolding:** Initialize Expo project with NativeWind (Tailwind), React Navigation, and Zustand.
+- [x] **Auth Flow:** Implement Supabase Auth (Email/Password or OAuth) screens (Login, Signup).
 - [ ] **Core Upload Flow (Analyze Tab):**
-  - [ ] UI for Document Picker to select PDF/DOCX from the phone.
-  - [ ] UI text area to paste the Job Description.
-  - [ ] Connect to `POST /api/upload` and `POST /api/analyze`.
-  - [ ] Render the loading skeleton.
+  - [x] UI for Document Picker to select PDF/DOCX from the phone.
+  - [x] UI text area to paste the Job Description.
+  - [x] Connect to `POST /api/upload` and `POST /api/analyze`.
+  - [x] Render the loading skeleton.
 - [ ] **Analysis Results UI:**
-  - [ ] Build the circular progress ATS score card.
-  - [ ] Build the matched/missing skills grid.
-  - [ ] Build the "Weak Bullets" warning cards.
+  - [x] Build the circular progress ATS score card.
+  - [x] Build the matched/missing skills grid.
+  - [x] Build the "Weak Bullets" warning cards.
 - [ ] **AI Rewrite UI:**
-  - [ ] Implement a bottom sheet or modal to show a weak bullet.
-  - [ ] Connect to `POST /api/rewrite-bullet` and display the 3 AI suggestions.
-  - [ ] Add "Accept" logic to update the local variant state.
+  - [x] Implement a bottom sheet or modal to show a weak bullet.
+  - [x] Connect to `POST /api/rewrite-bullet` and display the 3 AI suggestions.
+  - [x] Add "Accept" logic to update the local variant state.
 - [ ] **History & Variants (Resumes Tab):**
-  - [ ] Connect to `GET /api/history` to list past tailored resumes.
+  - [x] Connect to `GET /api/history` to list past tailored resumes.
   - [ ] Build swipe-to-delete or management UI.
 - [ ] **Export Flow:**
-  - [ ] Connect to `POST /api/export` and trigger the native iOS/Android file share/save dialog.
+  - [x] Connect to `POST /api/export` and trigger the native iOS/Android file share/save dialog.
 - [ ] **Profile & Monetization (Profile Tab):**
-  - [ ] Show remaining daily free limits.
-  - [ ] Build a static Paywall screen outlining the Pro tier benefits.
+  - [x] Show remaining daily free limits.
+  - [x] Build a static Paywall screen outlining the Pro tier benefits.
 
 ---
 
