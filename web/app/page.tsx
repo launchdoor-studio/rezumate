@@ -27,7 +27,6 @@ export default function Home() {
       <main>
         <section className="shell hero">
           <div>
-            <img src="/rezumate-logo.png" alt="" className="hero-logo" />
             <div className="eyebrow">Native iOS resume optimizer</div>
             <h1>Rezumate</h1>
             <p className="lead">
@@ -42,6 +41,13 @@ export default function Home() {
 
           <div className="phone" aria-label="Rezumate app preview">
             <div className="screen">
+              <div className="app-header">
+                <img src="/rezumate-logo.svg" alt="" className="app-logo" />
+                <div>
+                  <strong>Rezumate</strong>
+                  <span>Resume analysis</span>
+                </div>
+              </div>
               <div className="score">
                 <div>
                   <strong>84</strong>

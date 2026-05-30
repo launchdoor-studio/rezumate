@@ -87,14 +87,6 @@ a {
   letter-spacing: 0;
 }
 
-.hero-logo {
-  width: 86px;
-  height: 86px;
-  border-radius: 22px;
-  object-fit: contain;
-  box-shadow: 0 16px 38px rgb(17 24 39 / 12%);
-}
-
 h1 {
   margin: 14px 0 18px;
   font-size: clamp(48px, 7vw, 92px);
@@ -135,6 +127,31 @@ h1 {
   padding: 24px;
   border-radius: 30px;
   background: #f8fafc;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.app-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.app-header strong,
+.app-header span {
+  display: block;
+}
+
+.app-header span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .score {
