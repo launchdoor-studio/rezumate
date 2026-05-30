@@ -23,6 +23,7 @@
 		10000000000000000000000E /* VariantDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000E /* VariantDetailView.swift */; };
 		10000000000000000000000F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000F /* ProfileView.swift */; };
 		100000000000000000000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* Assets.xcassets */; };
+		100000000000000000000011 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011 /* DesignSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 		20000000000000000000000E /* VariantDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/VariantDetailView.swift; sourceTree = "<group>"; };
 		20000000000000000000000F /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/ProfileView.swift; sourceTree = "<group>"; };
 		200000000000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
+		200000000000000000000011 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/DesignSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -73,6 +75,7 @@
 				20000000000000000000000E /* VariantDetailView.swift */,
 				20000000000000000000000F /* ProfileView.swift */,
 				200000000000000000000010 /* Assets.xcassets */,
+				200000000000000000000011 /* DesignSystem.swift */,
 			);
 			path = RezumateNative;
 			sourceTree = "<group>";
@@ -180,6 +183,7 @@
 				10000000000000000000000D /* HistoryView.swift in Sources */,
 				10000000000000000000000E /* VariantDetailView.swift in Sources */,
 				10000000000000000000000F /* ProfileView.swift in Sources */,
+				100000000000000000000011 /* DesignSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

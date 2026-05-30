@@ -12,124 +12,209 @@ struct ResultsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 18) {
                 scoreHeader
-                keywordSection(title: "Matched Keywords", items: result.matchedKeywords, color: .green)
-                keywordSection(title: "Missing Keywords", items: result.missingKeywords, color: .orange)
+                componentScores
+                keywordSection(title: "Matched keywords", items: result.matchedKeywords, color: RezTheme.teal)
+                keywordSection(title: "Missing keywords", items: result.missingKeywords, color: RezTheme.amber)
                 bulletsSection
                 rewriteSection
                 exportSection
 
                 if let errorMessage {
-                    Text(errorMessage)
+                    Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
                         .foregroundStyle(.red)
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                 }
             }
             .padding()
         }
+        .background(RezTheme.paper.ignoresSafeArea())
         .navigationTitle("Results")
     }
 
     private var scoreHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("\(result.score)")
-                .font(.system(size: 72, weight: .bold, design: .rounded))
-                .foregroundStyle(scoreColor)
-            Text("ATS match score")
-                .font(.title3.weight(.semibold))
-            ProgressView(value: Double(result.score), total: 100)
-                .tint(scoreColor)
+        RezCard(padding: 18) {
+            HStack(alignment: .center, spacing: 18) {
+                ZStack {
+                    Circle()
+                        .stroke(scoreColor.opacity(0.14), lineWidth: 12)
+                    Circle()
+                        .trim(from: 0, to: CGFloat(result.score) / 100)
+                        .stroke(scoreColor, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                    Text("\(result.score)")
+                        .font(.system(size: 46, weight: .bold, design: .serif))
+                        .foregroundStyle(scoreColor)
+                }
+                .frame(width: 118, height: 118)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ATS match")
+                        .font(.system(.title2, design: .serif).weight(.bold))
+                    Text(scoreMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var componentScores: some View {
+        RezCard {
+            VStack(alignment: .leading, spacing: 14) {
+                SectionTitle("Score breakdown")
+                ForEach(result.componentScores.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(key.replacingOccurrences(of: "_", with: " ").capitalized)
+                                .font(.caption.weight(.semibold))
+                            Spacer()
+                            Text("\(value)")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(RezTheme.ink)
+                        }
+                        ProgressView(value: Double(value), total: 100)
+                            .tint(componentColor(value))
+                    }
+                }
+            }
+        }
     }
 
     private var scoreColor: Color {
+        componentColor(result.score)
+    }
+
+    private var scoreMessage: String {
         switch result.score {
-        case 80...100: .green
-        case 60..<80: .orange
+        case 80...100: "Strong fit. Polish missing details and export."
+        case 60..<80: "Good base. Close keyword and impact gaps."
+        default: "Needs tailoring before sending."
+        }
+    }
+
+    private func componentColor(_ value: Int) -> Color {
+        switch value {
+        case 80...100: RezTheme.teal
+        case 60..<80: RezTheme.amber
         default: .red
         }
     }
 
     private func keywordSection(title: String, items: [String], color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
-            FlowLayout(items: items) { item in
-                Text(item)
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(color.opacity(0.12), in: Capsule())
-                    .foregroundStyle(color)
+        RezCard {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title)
+                if items.isEmpty {
+                    Text("Nothing to show yet.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    FlowLayout(items: items) { item in
+                        Text(item)
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(color.opacity(0.12), in: Capsule())
+                            .foregroundStyle(color)
+                    }
+                }
             }
         }
     }
 
     private var bulletsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Weak Bullets")
-                .font(.headline)
-            ForEach(result.weakBullets, id: \.self) { bullet in
-                Button {
-                    bulletToRewrite = bullet
-                } label: {
-                    Label(bullet, systemImage: "wand.and.stars")
-                        .frame(maxWidth: .infinity, alignment: .leading)
+        RezCard {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle("Weak bullets", subtitle: "Tap one to rewrite")
+                if result.weakBullets.isEmpty {
+                    Text("No weak bullets detected.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(result.weakBullets, id: \.self) { bullet in
+                        Button {
+                            bulletToRewrite = bullet
+                        } label: {
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: "wand.and.stars")
+                                    .foregroundStyle(RezTheme.plum)
+                                Text(bullet)
+                                    .foregroundStyle(RezTheme.ink)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(12)
+                            .background(RezTheme.plum.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.bordered)
             }
         }
     }
 
     private var rewriteSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Rewrite a Bullet")
-                .font(.headline)
-            TextEditor(text: $bulletToRewrite)
-                .frame(minHeight: 120)
-                .padding(8)
-                .background(.background, in: RoundedRectangle(cornerRadius: 14))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(.quaternary)
+        RezCard {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle("Rewrite a bullet")
+                TextEditor(text: $bulletToRewrite)
+                    .frame(minHeight: 110)
+                    .padding(10)
+                    .scrollContentBackground(.hidden)
+                    .background(RezTheme.paper, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(RezTheme.line)
+                    }
+                Button {
+                    Task { await rewrite() }
+                } label: {
+                    Label(isWorking ? "Rewriting..." : "Rewrite bullet", systemImage: "sparkles")
+                        .frame(maxWidth: .infinity, minHeight: 46)
                 }
-            Button {
-                Task { await rewrite() }
-            } label: {
-                Label(isWorking ? "Rewriting..." : "Rewrite", systemImage: "wand.and.stars")
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(bulletToRewrite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
+                .buttonStyle(.borderedProminent)
+                .tint(RezTheme.plum)
+                .disabled(bulletToRewrite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
 
-            ForEach(rewrites, id: \.self) { rewrite in
-                Text(rewrite)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.background, in: RoundedRectangle(cornerRadius: 12))
+                ForEach(rewrites, id: \.self) { rewrite in
+                    Text(rewrite)
+                        .font(.subheadline)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RezTheme.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                }
             }
         }
     }
 
     private var exportSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Export")
-                .font(.headline)
+        RezCard {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle("Export", subtitle: "Create an ATS-safe PDF")
 
-            Button {
-                Task { await export() }
-            } label: {
-                Label(isWorking ? "Preparing..." : "Export ATS PDF", systemImage: "square.and.arrow.up")
-            }
-            .buttonStyle(.bordered)
-            .disabled(isWorking)
+                Button {
+                    Task { await export() }
+                } label: {
+                    Label(isWorking ? "Preparing..." : "Export ATS PDF", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                }
+                .buttonStyle(.bordered)
+                .disabled(isWorking)
 
-            if let exportedURL {
-                ShareLink(item: exportedURL) {
-                    Label("Share Exported PDF", systemImage: "paperplane")
+                if let exportedURL {
+                    ShareLink(item: exportedURL) {
+                        Label("Share exported PDF", systemImage: "paperplane")
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(RezTheme.teal)
                 }
             }
         }

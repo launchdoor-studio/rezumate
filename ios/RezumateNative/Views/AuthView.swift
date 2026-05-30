@@ -9,7 +9,7 @@ struct AuthView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground)
+            RezTheme.paper
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -26,7 +26,8 @@ struct AuthView: View {
 
                         VStack(spacing: 10) {
                             Text("Rezumate")
-                                .font(.system(size: 42, weight: .bold))
+                                .font(.system(size: 46, weight: .bold, design: .serif))
+                                .foregroundStyle(RezTheme.ink)
                                 .multilineTextAlignment(.center)
 
                             Text("Tailor a resume to a role in minutes with ATS scoring, missing keywords, and focused bullet rewrites.")
@@ -58,7 +59,7 @@ struct AuthView: View {
                                 .frame(maxWidth: .infinity, minHeight: 52)
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.black)
+                        .tint(RezTheme.ink)
                         .disabled(isSigningIn)
 
                         #if DEBUG

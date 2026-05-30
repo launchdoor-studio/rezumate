@@ -32,5 +32,6 @@ struct MainTabsView: View {
                     Label("Profile", systemImage: "person.crop.circle")
                 }
         }
+        .tint(RezTheme.ink)
     }
 }

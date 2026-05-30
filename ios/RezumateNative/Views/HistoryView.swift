@@ -27,7 +27,7 @@ struct HistoryView: View {
                                         Circle()
                                             .fill(scoreColor(variant.atsScore).opacity(0.14))
                                         Text("\(variant.atsScore ?? 0)")
-                                            .font(.headline.weight(.bold))
+                                            .font(.system(.headline, design: .serif).weight(.bold))
                                             .foregroundStyle(scoreColor(variant.atsScore))
                                     }
                                     .frame(width: 54, height: 54)
@@ -60,7 +60,7 @@ struct HistoryView: View {
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(RezTheme.paper.ignoresSafeArea())
             .overlay {
                 if isLoading && variants.isEmpty {
                     ProgressView("Loading history...")
@@ -147,12 +147,12 @@ private struct EmptyHistoryView: View {
         VStack(spacing: 14) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(.blue)
+                .foregroundStyle(RezTheme.blue)
                 .frame(width: 70, height: 70)
-                .background(Color.blue.opacity(0.12), in: Circle())
+                .background(RezTheme.blue.opacity(0.12), in: Circle())
 
             Text("No analyses yet")
-                .font(.title3.weight(.bold))
+                .font(.system(.title3, design: .serif).weight(.bold))
 
             Text("Upload a resume and analyze it against a job description. Your results will appear here.")
                 .font(.subheadline)
