@@ -5,7 +5,7 @@ const features = [
   ["Missing keywords", "Find the tools, skills, and phrases the job description expects but your resume lacks."],
   ["Bullet rewrites", "Improve weak bullets without fabricating experience or inventing metrics."],
   ["PDF export", "Share an ATS-safe resume version when your tailored draft is ready."],
-  ["Private by design", "Files are processed for analysis and the app avoids unnecessary raw file storage."],
+  ["Private by design", "Uploaded PDFs and DOCX files are parsed for analysis; history stores extracted text and results, not raw uploaded files."],
   ["Built for iPhone", "A focused native workflow for job seekers who want quick, useful feedback."]
 ];
 
