@@ -10,7 +10,7 @@ struct HistoryView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
                     if let errorMessage {
                         ErrorStateView(message: errorMessage) {
                             Task { await loadHistory() }
@@ -25,12 +25,16 @@ struct HistoryView: View {
                                 HStack(spacing: 14) {
                                     ZStack {
                                         Circle()
-                                            .fill(scoreColor(variant.atsScore).opacity(0.14))
+                                            .fill(scoreColor(variant.atsScore).opacity(0.08))
+                                            .overlay {
+                                                Circle()
+                                                    .stroke(scoreColor(variant.atsScore).opacity(0.22))
+                                            }
                                         Text("\(variant.atsScore ?? 0)")
-                                            .font(.system(.headline, design: .serif).weight(.bold))
+                                            .font(.headline.weight(.bold))
                                             .foregroundStyle(scoreColor(variant.atsScore))
                                     }
-                                    .frame(width: 54, height: 54)
+                                    .frame(width: 48, height: 48)
 
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text(variant.variantName)
@@ -38,7 +42,7 @@ struct HistoryView: View {
                                             .foregroundStyle(.primary)
                                         Text(variant.createdAt.formatted(date: .abbreviated, time: .shortened))
                                             .font(.subheadline)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(RezTheme.muted)
                                     }
 
                                     Spacer()
@@ -46,11 +50,11 @@ struct HistoryView: View {
                                         .font(.footnote.weight(.semibold))
                                         .foregroundStyle(.tertiary)
                                 }
-                                .padding(16)
-                                .background(.background, in: RoundedRectangle(cornerRadius: 16))
+                                .padding(14)
+                                .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(.quaternary)
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(RezTheme.border)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -60,12 +64,16 @@ struct HistoryView: View {
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .background(RezTheme.paper.ignoresSafeArea())
+            .rezScreenBackground()
             .overlay {
                 if isLoading && variants.isEmpty {
                     ProgressView("Loading history...")
                         .padding(18)
-                        .background(.background, in: RoundedRectangle(cornerRadius: 14))
+                        .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(RezTheme.border)
+                        }
                 }
             }
             .navigationTitle("History")
@@ -85,9 +93,9 @@ struct HistoryView: View {
 
     private func scoreColor(_ score: Int?) -> Color {
         switch score ?? 0 {
-        case 80...100: .green
-        case 60..<80: .orange
-        default: .red
+        case 80...100: RezTheme.success
+        case 60..<80: RezTheme.warning
+        default: RezTheme.error
         }
     }
 
@@ -123,20 +131,21 @@ private struct ErrorStateView: View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Could not load history", systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
-                .foregroundStyle(.red)
+                .foregroundStyle(RezTheme.error)
 
             Text(message)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(RezTheme.muted)
 
             Button("Try Again", action: retry)
                 .buttonStyle(.borderedProminent)
+                .tint(RezTheme.primary)
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.red.opacity(0.18))
         }
     }
@@ -147,20 +156,28 @@ private struct EmptyHistoryView: View {
         VStack(spacing: 14) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(RezTheme.blue)
+                .foregroundStyle(RezTheme.link)
                 .frame(width: 70, height: 70)
-                .background(RezTheme.blue.opacity(0.12), in: Circle())
+                .background(RezTheme.link.opacity(0.08), in: Circle())
+                .overlay {
+                    Circle()
+                        .stroke(RezTheme.link.opacity(0.18))
+                }
 
             Text("No analyses yet")
-                .font(.system(.title3, design: .serif).weight(.bold))
+                .font(.title3.weight(.semibold))
 
             Text("Upload a resume and analyze it against a job description. Your results will appear here.")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(RezTheme.muted)
                 .multilineTextAlignment(.center)
         }
         .padding(28)
         .frame(maxWidth: .infinity)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(RezTheme.border)
+        }
     }
 }

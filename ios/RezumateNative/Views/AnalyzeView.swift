@@ -12,23 +12,26 @@ struct AnalyzeView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    heroHeader
-                    uploadSection
-                    jobDescriptionSection
+                    introHeader
+                    analysisForm
                     analyzeButton
 
                     if let errorMessage {
                         Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                             .font(.callout)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(RezTheme.error)
                             .padding(14)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                            .background(RezTheme.error.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(RezTheme.error.opacity(0.22))
+                            }
                     }
                 }
                 .padding()
             }
-            .background(RezTheme.paper.ignoresSafeArea())
+            .rezScreenBackground()
             .navigationTitle("Analyze")
             .toolbarBackground(.visible, for: .navigationBar)
             .sheet(isPresented: $isShowingPicker) {
@@ -43,92 +46,115 @@ struct AnalyzeView: View {
         }
     }
 
-    private var heroHeader: some View {
-        RezCard(padding: 18) {
-            HStack(alignment: .center, spacing: 16) {
-                Image("RezumateLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 58, height: 58)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Tailor for the role")
-                        .font(.system(.title2, design: .serif).weight(.bold))
-                        .foregroundStyle(RezTheme.ink)
-                    Text("Upload a resume, paste a JD, and get targeted ATS feedback.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 0)
-            }
+    private var introHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Tailor for the role")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(RezTheme.ink)
+            Text("Upload a resume, paste the job description, and review a focused ATS report.")
+                .font(.subheadline)
+                .foregroundStyle(RezTheme.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.top, 4)
     }
 
     private var uploadSection: some View {
-        RezCard {
-            VStack(alignment: .leading, spacing: 14) {
-                SectionTitle("Resume", subtitle: "PDF or DOCX")
-
-                Button {
-                    isShowingPicker = true
-                } label: {
-                    HStack(spacing: 14) {
-                        Image(systemName: appState.upload == nil ? "doc.badge.plus" : "checkmark.circle.fill")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(appState.upload == nil ? RezTheme.blue : RezTheme.teal)
-                            .frame(width: 42, height: 42)
-                            .background((appState.upload == nil ? RezTheme.blue : RezTheme.teal).opacity(0.12), in: Circle())
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(appState.upload?.filename ?? "Choose resume file")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(RezTheme.ink)
-                                .lineLimit(1)
-                            Text(appState.upload.map { "\($0.characterCount.formatted()) characters extracted" } ?? "Securely parsed by the backend")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.bold))
-                            .foregroundStyle(.tertiary)
+        Button {
+            isShowingPicker = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: appState.upload == nil ? "doc.badge.plus" : "checkmark.circle.fill")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(appState.upload == nil ? RezTheme.link : RezTheme.success)
+                    .frame(width: 34, height: 34)
+                    .background((appState.upload == nil ? RezTheme.link : RezTheme.success).opacity(0.08), in: Circle())
+                    .overlay {
+                        Circle()
+                            .stroke((appState.upload == nil ? RezTheme.link : RezTheme.success).opacity(0.18))
                     }
-                }
-                .buttonStyle(.plain)
-                .disabled(isUploading)
 
-                if isUploading {
-                    ProgressView("Parsing resume...")
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(appState.upload?.filename ?? "Attach resume")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RezTheme.ink)
+                        .lineLimit(1)
+                    Text(appState.upload.map { "\($0.characterCount.formatted()) characters extracted" } ?? "PDF or DOCX")
                         .font(.caption)
+                        .foregroundStyle(RezTheme.muted)
                 }
 
-                ForEach(appState.upload?.warnings ?? [], id: \.self) { warning in
-                    Label(warning, systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(RezTheme.amber)
-                }
+                Spacer()
+                Text(appState.upload == nil ? "Choose" : "Change")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RezTheme.primary)
             }
+        }
+        .buttonStyle(.plain)
+        .disabled(isUploading)
+        .padding(12)
+        .background(RezTheme.elevatedSurface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(RezTheme.border)
         }
     }
 
-    private var jobDescriptionSection: some View {
+    private var analysisForm: some View {
         RezCard {
-            VStack(alignment: .leading, spacing: 14) {
-                SectionTitle("Target role", subtitle: "Paste the job description")
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Source")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RezTheme.muted)
+                        .textCase(.uppercase)
+                    uploadSection
 
-                TextEditor(text: $appState.jobDescription)
-                    .frame(minHeight: 230)
-                    .padding(10)
-                    .scrollContentBackground(.hidden)
-                    .background(RezTheme.paper, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(RezTheme.line)
+                    if isUploading {
+                        ProgressView("Parsing resume...")
+                            .font(.caption)
                     }
+
+                    ForEach(appState.upload?.warnings ?? [], id: \.self) { warning in
+                        Label(warning, systemImage: "exclamationmark.triangle")
+                            .font(.caption)
+                            .foregroundStyle(RezTheme.warning)
+                    }
+                }
+
+                Divider()
+                    .overlay(RezTheme.border)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Role brief")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(RezTheme.ink)
+                        Text("Paste the job description or recruiter notes.")
+                            .font(.subheadline)
+                            .foregroundStyle(RezTheme.muted)
+                    }
+
+                    TextEditor(text: $appState.jobDescription)
+                        .frame(minHeight: 300)
+                        .padding(12)
+                        .scrollContentBackground(.hidden)
+                        .background(RezTheme.elevatedSurface, in: RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(RezTheme.border)
+                        }
+                        .overlay(alignment: .topLeading) {
+                            if appState.jobDescription.isEmpty {
+                                Text("Paste the full role description here...")
+                                    .font(.body)
+                                    .foregroundStyle(RezTheme.muted.opacity(0.72))
+                                    .padding(.horizontal, 17)
+                                    .padding(.vertical, 20)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                }
             }
         }
     }
@@ -142,7 +168,7 @@ struct AnalyzeView: View {
                 .frame(maxWidth: .infinity, minHeight: 52)
         }
         .buttonStyle(.borderedProminent)
-        .tint(RezTheme.ink)
+        .tint(RezTheme.primary)
         .disabled(appState.upload == nil || appState.jobDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAnalyzing)
     }
 

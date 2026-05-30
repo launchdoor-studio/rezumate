@@ -15,8 +15,8 @@ struct ResultsView: View {
             VStack(alignment: .leading, spacing: 18) {
                 scoreHeader
                 componentScores
-                keywordSection(title: "Matched keywords", items: result.matchedKeywords, color: RezTheme.teal)
-                keywordSection(title: "Missing keywords", items: result.missingKeywords, color: RezTheme.amber)
+                keywordSection(title: "Matched keywords", items: result.matchedKeywords, color: RezTheme.success)
+                keywordSection(title: "Missing keywords", items: result.missingKeywords, color: RezTheme.warning)
                 bulletsSection
                 rewriteSection
                 exportSection
@@ -24,15 +24,19 @@ struct ResultsView: View {
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(RezTheme.error)
                         .padding(14)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                        .background(RezTheme.error.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(RezTheme.error.opacity(0.22))
+                        }
                 }
             }
             .padding()
         }
-        .background(RezTheme.paper.ignoresSafeArea())
+        .rezScreenBackground()
         .navigationTitle("Results")
     }
 
@@ -55,9 +59,10 @@ struct ResultsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("ATS match")
                         .font(.system(.title2, design: .serif).weight(.bold))
+                        .foregroundStyle(RezTheme.ink)
                     Text(scoreMessage)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(RezTheme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -102,9 +107,9 @@ struct ResultsView: View {
 
     private func componentColor(_ value: Int) -> Color {
         switch value {
-        case 80...100: RezTheme.teal
-        case 60..<80: RezTheme.amber
-        default: .red
+        case 80...100: RezTheme.success
+        case 60..<80: RezTheme.warning
+        default: RezTheme.error
         }
     }
 
@@ -115,15 +120,19 @@ struct ResultsView: View {
                 if items.isEmpty {
                     Text("Nothing to show yet.")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(RezTheme.muted)
                 } else {
                     FlowLayout(items: items) { item in
                         Text(item)
                             .font(.caption.weight(.semibold))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
-                            .background(color.opacity(0.12), in: Capsule())
+                            .background(color.opacity(0.07), in: Capsule())
                             .foregroundStyle(color)
+                            .overlay {
+                                Capsule()
+                                    .stroke(color.opacity(0.20))
+                            }
                     }
                 }
             }
@@ -137,7 +146,7 @@ struct ResultsView: View {
                 if result.weakBullets.isEmpty {
                     Text("No weak bullets detected.")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(RezTheme.muted)
                 } else {
                     ForEach(result.weakBullets, id: \.self) { bullet in
                         Button {
@@ -145,13 +154,17 @@ struct ResultsView: View {
                         } label: {
                             HStack(alignment: .top, spacing: 10) {
                                 Image(systemName: "wand.and.stars")
-                                    .foregroundStyle(RezTheme.plum)
+                                    .foregroundStyle(RezTheme.link)
                                 Text(bullet)
                                     .foregroundStyle(RezTheme.ink)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(12)
-                            .background(RezTheme.plum.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                            .background(RezTheme.elevatedSurface, in: RoundedRectangle(cornerRadius: 8))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(RezTheme.border)
+                            }
                         }
                         .buttonStyle(.plain)
                     }
@@ -168,11 +181,7 @@ struct ResultsView: View {
                     .frame(minHeight: 110)
                     .padding(10)
                     .scrollContentBackground(.hidden)
-                    .background(RezTheme.paper, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(RezTheme.line)
-                    }
+                    .rezInputSurface()
                 Button {
                     Task { await rewrite() }
                 } label: {
@@ -180,7 +189,7 @@ struct ResultsView: View {
                         .frame(maxWidth: .infinity, minHeight: 46)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(RezTheme.plum)
+                .tint(RezTheme.primary)
                 .disabled(bulletToRewrite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
 
                 ForEach(rewrites, id: \.self) { rewrite in
@@ -188,7 +197,11 @@ struct ResultsView: View {
                         .font(.subheadline)
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RezTheme.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                        .background(RezTheme.success.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(RezTheme.success.opacity(0.18))
+                        }
                 }
             }
         }
@@ -206,6 +219,7 @@ struct ResultsView: View {
                         .frame(maxWidth: .infinity, minHeight: 46)
                 }
                 .buttonStyle(.bordered)
+                .tint(RezTheme.primary)
                 .disabled(isWorking)
 
                 if let exportedURL {
@@ -214,7 +228,7 @@ struct ResultsView: View {
                             .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(RezTheme.teal)
+                    .tint(RezTheme.primary)
                 }
             }
         }

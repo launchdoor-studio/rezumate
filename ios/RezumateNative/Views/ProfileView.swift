@@ -21,7 +21,7 @@ struct ProfileView: View {
                                     .foregroundStyle(RezTheme.ink)
                                 Text("Free plan")
                                     .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(RezTheme.muted)
                             }
 
                             Spacer()
@@ -38,12 +38,13 @@ struct ProfileView: View {
                                     .frame(maxWidth: .infinity, minHeight: 44)
                             }
                             .buttonStyle(.bordered)
+                            .tint(RezTheme.error)
                         }
                     }
                 }
                 .padding()
             }
-            .background(RezTheme.paper.ignoresSafeArea())
+            .rezScreenBackground()
             .navigationTitle("Profile")
         }
     }

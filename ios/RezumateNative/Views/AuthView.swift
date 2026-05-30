@@ -9,30 +9,29 @@ struct AuthView: View {
 
     var body: some View {
         ZStack {
-            RezTheme.paper
+            RezTheme.appBackground
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Spacer(minLength: 36)
 
-                VStack(spacing: 24) {
-                    VStack(spacing: 16) {
+                VStack(spacing: 26) {
+                    VStack(spacing: 18) {
                         Image("RezumateLogo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 86, height: 86)
-                            .clipShape(RoundedRectangle(cornerRadius: 22))
-                            .shadow(color: .black.opacity(0.08), radius: 12, y: 6)
+                            .frame(width: 72, height: 72)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
 
                         VStack(spacing: 10) {
                             Text("Rezumate")
-                                .font(.system(size: 46, weight: .bold, design: .serif))
+                                .font(.system(size: 44, weight: .bold, design: .serif))
                                 .foregroundStyle(RezTheme.ink)
                                 .multilineTextAlignment(.center)
 
                             Text("Tailor a resume to a role in minutes with ATS scoring, missing keywords, and focused bullet rewrites.")
                                 .font(.body)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(RezTheme.muted)
                                 .multilineTextAlignment(.center)
                                 .lineSpacing(3)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -42,12 +41,16 @@ struct AuthView: View {
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.callout)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(RezTheme.error)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .frame(maxWidth: .infinity)
-                            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                            .background(RezTheme.error.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(RezTheme.error.opacity(0.22))
+                            }
                     }
 
                     VStack(spacing: 12) {
@@ -59,7 +62,7 @@ struct AuthView: View {
                                 .frame(maxWidth: .infinity, minHeight: 52)
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(RezTheme.ink)
+                        .tint(RezTheme.primary)
                         .disabled(isSigningIn)
 
                         #if DEBUG
@@ -71,6 +74,7 @@ struct AuthView: View {
                                 .frame(maxWidth: .infinity, minHeight: 48)
                         }
                         .buttonStyle(.bordered)
+                        .tint(RezTheme.primary)
                         #endif
                     }
                 }
