@@ -1,4 +1,5 @@
 import io
+import os
 import uuid
 import pytest
 from fastapi.testclient import TestClient
@@ -6,6 +7,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from unittest.mock import patch
+
+os.environ["ALLOW_DEV_APPLE_AUTH"] = "true"
 
 from main import app
 from app.database import Base, get_db, User
@@ -57,6 +60,33 @@ def generate_dummy_pdf() -> bytes:
     pdf_bytes = buffer.getvalue()
     buffer.close()
     return pdf_bytes
+
+def test_apple_auth_exchange_returns_session_token():
+    response = client.post(
+        "/api/auth/apple",
+        json={
+            "identity_token": "dev-apple-token:test-user",
+            "email": "ios@example.com",
+            "full_name": "iOS User",
+        },
+    )
+
+    assert response.status_code == 200
+    auth_data = response.json()
+    assert auth_data["success"] is True
+    assert auth_data["token"].startswith("rzm.")
+    assert auth_data["user"]["email"] == "test-user@apple.rezumate.local"
+
+    history = client.get(
+        "/api/history",
+        headers={"Authorization": f"Bearer {auth_data['token']}"},
+    )
+    assert history.status_code == 200
+
+def test_health_check():
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 def test_full_workflow():
     # 1. Upload Resume

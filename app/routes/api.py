@@ -3,13 +3,22 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.database import get_db, User, Resume, JobDescription, ResumeVariant
-from app.services.auth_service import get_current_user, check_usage_limits
+from app.services.auth_service import (
+    check_usage_limits,
+    create_session_token,
+    get_current_user,
+    get_or_create_apple_user,
+    verify_apple_identity_token,
+)
 from app.services.document_service import extract_pdf_text, extract_docx_text
 from app.services.export_service import generate_ats_pdf
 from app.services.ats_service import analyze_resume_against_jd
 from app.services.ai_service import rewrite_bullet_point, MODEL_NAME
 from app.services.schemas import (
     UploadResponse, 
+    AppleAuthRequest,
+    AuthResponse,
+    AuthUser,
     AnalyzeRequest, 
     AnalyzeResponse,
     RewriteBulletRequest,
@@ -41,6 +50,24 @@ def validate_upload(upload: UploadFile):
         raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
         
     return SUPPORTED_CONTENT_TYPES[content_type]
+
+
+@router.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
+@router.post("/auth/apple", response_model=AuthResponse)
+def authenticate_with_apple(request: AppleAuthRequest, db: Session = Depends(get_db)):
+    claims = verify_apple_identity_token(request.identity_token)
+    user = get_or_create_apple_user(db, claims, request.email)
+    token = create_session_token(user)
+
+    return AuthResponse(
+        success=True,
+        token=token,
+        user=AuthUser(id=user.id, email=user.email, plan_tier=user.plan_tier),
+    )
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_resume(
@@ -250,4 +277,3 @@ def export_resume(
         media_type="application/pdf", 
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
-

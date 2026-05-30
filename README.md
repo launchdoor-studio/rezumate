@@ -1,68 +1,82 @@
 <div align="center">
-  <img src="app/static/img/favicon.png" alt="Rezumate Logo" width="100" height="100">
-  
-  # Rezumate
-  
-  **From Raw Resume to Hired.** A professional-grade, AI-powered tool for analyzing, comparing, and ranking resumes against job descriptions.
 
-  ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
-  ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-  ![Turso](https://img.shields.io/badge/Database-Turso-00A3E0?logo=sqlite&logoColor=white)
-  ![Vercel](https://img.shields.io/badge/Deployment-Vercel-000000?logo=vercel&logoColor=white)
-  ![Groq](https://img.shields.io/badge/AI-Groq-F55036)
+<img src="web/public/rezumate-logo.png" alt="Rezumate logo" width="96" height="96">
+
+# Rezumate
+
+**Native iOS resume optimization powered by a FastAPI analysis backend.**
+
 </div>
 
-## ✨ Pro Features
-- **🎯 Precision Scoring:** Calibrated ATS scanning using Llama 3.3 70B.
-- **📊 Structured Dashboard:** Visualizes skill gaps, strengths, and fit levels.
-- **📄 High-Fidelity Parsing:** Layout-aware PDF extraction with `pdfplumber`.
-- **💾 Persistent History:** Powered by **Turso** (SQLite at the edge) for zero-cost persistence.
-- **🤖 Contextual Chat:** Deep-dive into resume improvements with a persistent AI coach.
+Rezumate helps job seekers upload a resume, paste a job description, get ATS-focused feedback, rewrite weak bullets, and export an ATS-safe PDF.
 
-## 🚀 Quick Start (Zero-Cost Deployment)
+## Repo Layout
 
-### 1. Prerequisites
-- [Groq API Key](https://console.groq.com/)
-- [Turso CLI](https://docs.turso.tech/cli) (Optional for local, required for prod)
+- `ios/` - native SwiftUI iOS app for App Store release.
+- `app/` + `main.py` - FastAPI backend for auth, upload parsing, ATS scoring, rewrites, history, and export.
+- `web/` - Next.js marketing website with privacy, terms, support, and waitlist pages.
+- `mobile/` - legacy Expo/React Native app kept temporarily until native iOS parity is fully verified.
 
-### 2. Local Setup
+## Backend
+
 ```bash
-# Install dependencies
 uv sync
-
-# Run the application
 uv run dev
 ```
-The app will automatically use a local `rezumate.db` if no `DATABASE_URL` is provided.
 
-### 3. Production Deployment (Vercel + Turso)
-1. **Create Turso DB:** `turso db create rezumate`
-2. **Get Credentials:** 
-   - URL: `turso db show rezumate --url`
-   - Token: `turso db tokens create rezumate`
-3. **Deploy to Vercel:**
-   - Push to GitHub.
-   - Connect to Vercel.
-   - Add Env Vars: `DATABASE_URL` (your Turso URL) and `GROQ_API_KEY`.
+The API runs at `http://127.0.0.1:8000`.
 
-## 🛠 Tech Stack
-- **Backend:** FastAPI (Python)
-- **Database:** PostgreSQL in production, SQLite fallback for local dev
-- **AI:** LangChain + Groq (Llama 3.3 70B)
-- **Mobile:** Expo + React Native
+Important environment variables:
 
-## 📱 Mobile App
+- `DATABASE_URL` - production database URL. Local development falls back to `rezumate.db`.
+- `GROQ_API_KEY` - enables AI bullet rewrites.
+- `SESSION_SECRET` - signs Rezumate app session tokens.
+- `APPLE_BUNDLE_ID` - validates Sign in with Apple token audience in production.
+- `ALLOW_DEV_APPLE_AUTH` - set to `true` only for local `dev-apple-token:*` auth.
+
+Key endpoints:
+
+- `GET /api/health`
+- `POST /api/auth/apple`
+- `POST /api/upload`
+- `POST /api/analyze`
+- `POST /api/rewrite-bullet`
+- `GET /api/history`
+- `GET /api/variants/{variant_id}`
+- `POST /api/export`
+
+## Native iOS App
+
+Open the Xcode project:
+
 ```bash
-# Backend, from repo root
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# Mobile, from another terminal
-cd mobile
-npm install
-npm run ios
+open ios/RezumateNative.xcodeproj
 ```
 
-The mobile app uses `EXPO_PUBLIC_API_BASE_URL` from `mobile/.env`. For the iOS simulator on the same Mac, use `http://127.0.0.1:8000`.
+The Debug build points at `http://127.0.0.1:8000` through `REZUMATE_API_BASE_URL`. The app includes:
 
-## License
-MIT License
+- Sign in with Apple plus a Debug-only local dev session.
+- PDF/DOCX document picker upload.
+- Job description analysis.
+- Result screen with ATS score, keywords, weak bullets, rewrites, and PDF export/share.
+- History and variant detail views.
+
+Before App Store release, set the production bundle identifier/team, configure Sign in with Apple in the Apple Developer portal, and update the Release API URL.
+
+## Marketing Website
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+The website includes the landing page, privacy policy, terms, support, and waitlist pages. It is intended to deploy separately from the API, for example on Vercel.
+
+## Tests
+
+```bash
+uv run pytest
+```
+
+The backend tests cover upload, analyze, rewrite, history, variant detail, export, health checks, and the Apple auth session exchange.

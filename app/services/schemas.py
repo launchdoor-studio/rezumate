@@ -13,6 +13,21 @@ class UploadResponse(BaseModel):
     warnings: List[str]
     character_count: int
 
+class AppleAuthRequest(BaseModel):
+    identity_token: str = Field(description="The identityToken returned by Sign in with Apple")
+    email: Optional[str] = Field(default=None, description="Email returned by Apple on first authorization")
+    full_name: Optional[str] = Field(default=None, description="Display name returned by Apple on first authorization")
+
+class AuthUser(BaseModel):
+    id: UUID
+    email: str
+    plan_tier: str
+
+class AuthResponse(BaseModel):
+    success: bool
+    token: str
+    user: AuthUser
+
 class AnalyzeRequest(BaseModel):
     resume_id: UUID = Field(description="The UUID of the previously uploaded resume")
     resume_text: str = Field(description="The extracted raw text of the resume (can be modified by user before sending)")
