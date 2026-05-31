@@ -23,22 +23,24 @@ struct HistoryView: View {
                                 Task { await loadVariant(variant.id) }
                             } label: {
                                 HStack(spacing: 14) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(scoreColor(variant.atsScore).opacity(0.08))
-                                            .overlay {
-                                                Circle()
-                                                    .stroke(scoreColor(variant.atsScore).opacity(0.22))
-                                            }
+                                    VStack(spacing: 0) {
                                         Text("\(variant.atsScore ?? 0)")
-                                            .font(.headline.weight(.bold))
-                                            .foregroundStyle(scoreColor(variant.atsScore))
+                                            .font(.headline.weight(.black))
+                                            .foregroundStyle(RezTheme.ink)
+                                        Text("ATS")
+                                            .font(.system(size: 9, weight: .black))
+                                            .foregroundStyle(RezTheme.ink)
                                     }
                                     .frame(width: 48, height: 48)
+                                    .background(scoreColor(variant.atsScore), in: RoundedRectangle(cornerRadius: 6))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(RezTheme.ink, lineWidth: 2)
+                                    }
 
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text(variant.variantName)
-                                            .font(.headline)
+                                            .font(.headline.weight(.black))
                                             .foregroundStyle(.primary)
                                         Text(variant.createdAt.formatted(date: .abbreviated, time: .shortened))
                                             .font(.subheadline)
@@ -54,8 +56,9 @@ struct HistoryView: View {
                                 .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
                                 .overlay {
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(RezTheme.border)
+                                        .stroke(RezTheme.border, lineWidth: 2)
                                 }
+                                .rezBrutalShadow()
                             }
                             .buttonStyle(.plain)
                         }
@@ -72,8 +75,9 @@ struct HistoryView: View {
                         .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
                         .overlay {
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(RezTheme.border)
+                                .stroke(RezTheme.border, lineWidth: 2)
                         }
+                        .rezBrutalShadow()
                 }
             }
             .navigationTitle("History")
@@ -138,16 +142,16 @@ private struct ErrorStateView: View {
                 .foregroundStyle(RezTheme.muted)
 
             Button("Try Again", action: retry)
-                .buttonStyle(.borderedProminent)
-                .tint(RezTheme.primary)
+                .buttonStyle(RezPrimaryButtonStyle())
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.red.opacity(0.18))
+                .stroke(RezTheme.ink, lineWidth: 2)
         }
+        .rezBrutalShadow()
     }
 }
 
@@ -156,12 +160,12 @@ private struct EmptyHistoryView: View {
         VStack(spacing: 14) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(RezTheme.link)
+                .foregroundStyle(RezTheme.ink)
                 .frame(width: 70, height: 70)
-                .background(RezTheme.link.opacity(0.08), in: Circle())
+                .background(RezTheme.blueWash, in: RoundedRectangle(cornerRadius: 8))
                 .overlay {
-                    Circle()
-                        .stroke(RezTheme.link.opacity(0.18))
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(RezTheme.ink, lineWidth: 2)
                 }
 
             Text("No analyses yet")
@@ -177,7 +181,8 @@ private struct EmptyHistoryView: View {
         .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
-                .stroke(RezTheme.border)
+                .stroke(RezTheme.border, lineWidth: 2)
         }
+        .rezBrutalShadow()
     }
 }

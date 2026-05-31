@@ -24,14 +24,14 @@ struct ResultsView: View {
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
-                        .foregroundStyle(RezTheme.error)
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RezTheme.error.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(RezTheme.error.opacity(0.22))
-                        }
+                            .foregroundStyle(RezTheme.ink)
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RezTheme.error, in: RoundedRectangle(cornerRadius: 6))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(RezTheme.ink, lineWidth: 2)
+                            }
                 }
             }
             .padding()
@@ -43,22 +43,25 @@ struct ResultsView: View {
     private var scoreHeader: some View {
         RezCard(padding: 18) {
             HStack(alignment: .center, spacing: 18) {
-                ZStack {
-                    Circle()
-                        .stroke(scoreColor.opacity(0.14), lineWidth: 12)
-                    Circle()
-                        .trim(from: 0, to: CGFloat(result.score) / 100)
-                        .stroke(scoreColor, style: StrokeStyle(lineWidth: 12, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
+                VStack(spacing: 2) {
                     Text("\(result.score)")
-                        .font(.system(size: 46, weight: .bold, design: .serif))
-                        .foregroundStyle(scoreColor)
+                        .font(.system(size: 42, weight: .black))
+                        .foregroundStyle(RezTheme.ink)
+                    Text("/100")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(RezTheme.ink)
                 }
-                .frame(width: 118, height: 118)
+                .frame(width: 104, height: 104)
+                .background(scoreColor, in: RoundedRectangle(cornerRadius: 8))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(RezTheme.ink, lineWidth: 2)
+                }
+                .rezBrutalShadow(x: 3, y: 3)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("ATS match")
-                        .font(.system(.title2, design: .serif).weight(.bold))
+                    Text("ATS SCORE")
+                        .font(.caption.weight(.black))
                         .foregroundStyle(RezTheme.ink)
                     Text(scoreMessage)
                         .font(.subheadline)
@@ -87,6 +90,10 @@ struct ResultsView: View {
                         }
                         ProgressView(value: Double(value), total: 100)
                             .tint(componentColor(value))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .stroke(RezTheme.ink.opacity(0.4), lineWidth: 1)
+                            }
                     }
                 }
             }
@@ -124,14 +131,14 @@ struct ResultsView: View {
                 } else {
                     FlowLayout(items: items) { item in
                         Text(item)
-                            .font(.caption.weight(.semibold))
+                            .font(.caption.weight(.black))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
-                            .background(color.opacity(0.07), in: Capsule())
-                            .foregroundStyle(color)
+                            .background(color, in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(RezTheme.ink)
                             .overlay {
-                                Capsule()
-                                    .stroke(color.opacity(0.20))
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(RezTheme.ink, lineWidth: 2)
                             }
                     }
                 }
@@ -160,11 +167,12 @@ struct ResultsView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(12)
-                            .background(RezTheme.elevatedSurface, in: RoundedRectangle(cornerRadius: 8))
+                            .background(RezTheme.elevatedSurface, in: RoundedRectangle(cornerRadius: 6))
                             .overlay {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(RezTheme.border)
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(RezTheme.border, lineWidth: 2)
                             }
+                            .rezBrutalShadow(x: 2, y: 2)
                         }
                         .buttonStyle(.plain)
                     }
@@ -186,10 +194,8 @@ struct ResultsView: View {
                     Task { await rewrite() }
                 } label: {
                     Label(isWorking ? "Rewriting..." : "Rewrite bullet", systemImage: "sparkles")
-                        .frame(maxWidth: .infinity, minHeight: 46)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(RezTheme.primary)
+                .buttonStyle(RezPrimaryButtonStyle())
                 .disabled(bulletToRewrite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
 
                 ForEach(rewrites, id: \.self) { rewrite in
@@ -197,10 +203,10 @@ struct ResultsView: View {
                         .font(.subheadline)
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RezTheme.success.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+                        .background(RezTheme.success, in: RoundedRectangle(cornerRadius: 6))
                         .overlay {
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(RezTheme.success.opacity(0.18))
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(RezTheme.ink, lineWidth: 2)
                         }
                 }
             }
@@ -216,19 +222,15 @@ struct ResultsView: View {
                     Task { await export() }
                 } label: {
                     Label(isWorking ? "Preparing..." : "Export ATS PDF", systemImage: "square.and.arrow.up")
-                        .frame(maxWidth: .infinity, minHeight: 46)
                 }
-                .buttonStyle(.bordered)
-                .tint(RezTheme.primary)
+                .buttonStyle(RezSecondaryButtonStyle())
                 .disabled(isWorking)
 
                 if let exportedURL {
                     ShareLink(item: exportedURL) {
                         Label("Share exported PDF", systemImage: "paperplane")
-                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(RezTheme.primary)
+                    .buttonStyle(RezPrimaryButtonStyle())
                 }
             }
         }

@@ -8,61 +8,68 @@ struct AuthView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        ZStack {
-            RezTheme.appBackground
-                .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                Spacer(minLength: 36)
-
-                VStack(spacing: 26) {
-                    VStack(spacing: 18) {
-                        Image("RezumateLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 72, height: 72)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-
-                        VStack(spacing: 10) {
-                            Text("Rezumate")
-                                .font(.system(size: 44, weight: .bold, design: .serif))
-                                .foregroundStyle(RezTheme.ink)
-                                .multilineTextAlignment(.center)
-
-                            Text("Tailor a resume to a role in minutes with ATS scoring, missing keywords, and focused bullet rewrites.")
-                                .font(.body)
-                                .foregroundStyle(RezTheme.muted)
-                                .multilineTextAlignment(.center)
-                                .lineSpacing(3)
-                                .fixedSize(horizontal: false, vertical: true)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text("REZUMATE")
+                        .font(.system(size: 15, weight: .black))
+                        .tracking(0)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(RezTheme.ink, in: RoundedRectangle(cornerRadius: 3))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 3)
+                                .stroke(RezTheme.ink, lineWidth: 2)
                         }
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("AI-POWERED\nRESUME\nOPTIMIZATION")
+                            .font(.system(size: 31, weight: .black))
+                            .tracking(0)
+                            .lineSpacing(2)
+                            .foregroundStyle(RezTheme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text("Analyze. Improve. Land more interviews.")
+                            .font(.callout.weight(.bold))
+                            .foregroundStyle(RezTheme.ink)
                     }
 
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.callout)
-                            .foregroundStyle(RezTheme.error)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .frame(maxWidth: .infinity)
-                            .background(RezTheme.error.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(RezTheme.error.opacity(0.22))
-                            }
+                    VStack(alignment: .leading, spacing: 14) {
+                        FeatureRow(icon: "scope", text: "ATS Analysis")
+                        FeatureRow(icon: "sparkles", text: "AI Suggestions")
+                        FeatureRow(icon: "briefcase", text: "Tailored for Every Role")
+                        FeatureRow(icon: "bolt", text: "Instant Results")
                     }
+                }
+                .padding(.top, 26)
 
-                    VStack(spacing: 12) {
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(RezTheme.ink)
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RezTheme.error, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(RezTheme.ink, lineWidth: 2)
+                        }
+                }
+
+                RezCard(padding: 16) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("GET STARTED")
+                            .font(.subheadline.weight(.black))
+                            .foregroundStyle(RezTheme.ink)
+
                         Button {
                             Task { await signIn() }
                         } label: {
                             Label(isSigningIn ? "Signing In..." : "Sign in with Apple", systemImage: "apple.logo")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, minHeight: 52)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(RezTheme.primary)
+                        .buttonStyle(RezPrimaryButtonStyle())
                         .disabled(isSigningIn)
 
                         #if DEBUG
@@ -70,20 +77,16 @@ struct AuthView: View {
                             appState.session = AuthSession(token: "dev-token", user: nil)
                         } label: {
                             Label("Use Local Dev Session", systemImage: "terminal")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, minHeight: 48)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(RezTheme.primary)
+                        .buttonStyle(RezSecondaryButtonStyle(fill: RezTheme.warning))
                         #endif
                     }
                 }
-                .padding(24)
-                .frame(maxWidth: 420)
-
-                Spacer(minLength: 36)
             }
+            .padding(20)
+            .frame(maxWidth: 440, alignment: .leading)
         }
+        .rezScreenBackground()
     }
 
     private func signIn() async {
@@ -98,5 +101,21 @@ struct AuthView: View {
             errorMessage = error.localizedDescription
         }
         isSigningIn = false
+    }
+}
+
+private struct FeatureRow: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .black))
+                .frame(width: 20)
+            Text(text)
+                .font(.system(size: 13, weight: .black))
+        }
+        .foregroundStyle(RezTheme.ink)
     }
 }

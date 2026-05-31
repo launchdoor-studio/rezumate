@@ -13,15 +13,26 @@ struct ProfileView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 54, height: 54)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(RezTheme.ink, lineWidth: 2)
+                                }
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(appState.session?.user?.email ?? "Signed in")
-                                    .font(.headline)
+                                    .font(.headline.weight(.black))
                                     .foregroundStyle(RezTheme.ink)
                                 Text("Free plan")
-                                    .font(.subheadline)
-                                    .foregroundStyle(RezTheme.muted)
+                                    .font(.caption.weight(.black))
+                                    .foregroundStyle(RezTheme.ink)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 5)
+                                    .background(RezTheme.warning, in: RoundedRectangle(cornerRadius: 4))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .stroke(RezTheme.ink, lineWidth: 2)
+                                    }
                             }
 
                             Spacer()
@@ -35,10 +46,8 @@ struct ProfileView: View {
                                 appState.signOut()
                             } label: {
                                 Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                                    .frame(maxWidth: .infinity, minHeight: 44)
                             }
-                            .buttonStyle(.bordered)
-                            .tint(RezTheme.error)
+                            .buttonStyle(RezSecondaryButtonStyle(fill: RezTheme.error))
                         }
                     }
                 }
