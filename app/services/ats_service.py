@@ -22,11 +22,46 @@ KNOWN_SKILLS = {
     "machine learning", "ml", "ai", "llm", "nlp", "tensorflow",
     "pytorch", "scikit-learn", "data analysis", "analytics", "excel",
     "power bi", "tableau", "figma", "product management", "agile", "scrum",
+    "html", "css", "json", "rest api", "rest apis", "responsive design",
+    "accessibility", "web applications", "ui", "frontend", "nextjs",
+    "tailwind", "tailwind css", "node", "apis",
+}
+
+CANONICAL_KEYWORDS = {
+    "apis": "api",
+    "api": "api",
+    "nextjs": "next.js",
+    "next.js": "next.js",
+    "node": "node.js",
+    "node.js": "node.js",
+    "rest": "rest api",
+    "rest api": "rest api",
+    "rest apis": "rest api",
+    "tailwind": "tailwind css",
+    "tailwind css": "tailwind css",
+}
+
+REDUNDANT_KEYWORDS = {
+    "api": {"rest api", "graphql", "fastapi"},
+}
+
+KEYWORD_NOISE = {
+    "ability", "basic", "collaborating", "communication", "developer",
+    "development", "engineer", "engineering", "experience", "familiarity",
+    "good", "intern", "internship", "knowledge", "learn", "learning",
+    "nice", "requirements", "responsibilities", "responsibility", "role",
+    "strong", "understanding", "web", "willingness", "work", "working",
 }
 
 WEAK_BULLET_STARTERS = (
     "worked on", "helped with", "responsible for", "involved in",
     "participated in", "assisted with", "handled", "did", "made",
+)
+
+ACTION_LINE_STARTERS = (
+    "built", "created", "developed", "designed", "implemented", "improved",
+    "integrated", "launched", "led", "maintained", "managed", "optimized",
+    "shipped", "worked on", "helped with", "responsible for", "assisted with",
 )
 
 MEASURABLE_IMPACT_RE = re.compile(
@@ -49,7 +84,7 @@ def analyze_resume_against_jd(resume_text: str, job_description: str) -> dict:
 
     for keyword in jd_keywords:
         keyword_lower = keyword.lower()
-        if keyword_lower in resume_lower:
+        if _keyword_in_text(keyword_lower, resume_lower):
             matched_keywords.append(keyword)
         elif _partial_keyword_match(keyword_lower, resume_lower):
             partial_matches.append(keyword)
@@ -101,14 +136,13 @@ def analyze_resume_against_jd(resume_text: str, job_description: str) -> dict:
 
 def extract_keywords(text: str) -> list[str]:
     text_lower = text.lower()
-    found = {skill for skill in KNOWN_SKILLS if skill in text_lower}
+    found = {
+        _canonical_keyword(skill)
+        for skill in KNOWN_SKILLS
+        if skill not in KEYWORD_NOISE and _keyword_in_text(skill, text_lower)
+    }
 
-    for phrase in re.findall(r"\b[A-Z][A-Za-z0-9+#./-]*(?:\s+[A-Z][A-Za-z0-9+#./-]*){0,2}\b", text):
-        normalized = phrase.strip().lower()
-        if len(normalized) > 1 and normalized not in {"we", "you", "the", "and"}:
-            found.add(normalized)
-
-    return sorted(found)
+    return sorted(_remove_redundant_keywords(found))
 
 
 def extract_bullets(text: str) -> list[str]:
@@ -116,7 +150,11 @@ def extract_bullets(text: str) -> list[str]:
     for line in text.splitlines():
         stripped = line.strip()
         if re.match(r"^([\-*•]|\d+[.)])\s+", stripped):
-            bullets.append(re.sub(r"^([\-*•]|\d+[.)])\s+", "", stripped).strip())
+            bullet = re.sub(r"^([\-*•]|\d+[.)])\s+", "", stripped).strip()
+            if is_valid_bullet_text(bullet):
+                bullets.append(bullet)
+        elif _looks_like_resume_action_line(stripped) and is_valid_bullet_text(stripped):
+            bullets.append(stripped)
     return bullets
 
 
@@ -146,14 +184,74 @@ def detect_formatting_warnings(text: str) -> list[str]:
 
 def is_weak_bullet(bullet: str) -> bool:
     normalized = bullet.strip().lower()
-    if not normalized:
+    if not normalized or not is_valid_bullet_text(bullet):
         return False
     return normalized.startswith(WEAK_BULLET_STARTERS) or len(normalized.split()) < 7
+
+
+def is_valid_bullet_text(value: str) -> bool:
+    normalized = re.sub(r"\s+", " ", value).strip()
+    if len(normalized) < 12 or len(normalized) > 320:
+        return False
+    if _has_repetitive_noise(normalized):
+        return False
+    words = re.findall(r"[A-Za-z][A-Za-z+#./-]*", normalized)
+    if len(words) < 3:
+        return False
+    average_word_length = sum(len(word) for word in words) / len(words)
+    return average_word_length <= 18
 
 
 def _partial_keyword_match(keyword: str, resume_lower: str) -> bool:
     parts = [part for part in re.split(r"[\s/+-]+", keyword) if len(part) > 2]
     return bool(parts) and any(part in resume_lower for part in parts)
+
+
+def _keyword_in_text(keyword: str, text_lower: str) -> bool:
+    escaped = re.escape(keyword.lower()).replace(r"\ ", r"\s+")
+    if re.search(rf"(?<![a-z0-9]){escaped}(?![a-z0-9])", text_lower):
+        return True
+
+    if keyword == "api":
+        return bool(re.search(r"(?<![a-z0-9])apis?(?![a-z0-9])", text_lower))
+    if keyword == "rest api":
+        return bool(re.search(r"(?<![a-z0-9])rest\s+apis?(?![a-z0-9])", text_lower))
+    if keyword == "next.js":
+        return bool(re.search(r"(?<![a-z0-9])next[.\s-]?js(?![a-z0-9])", text_lower))
+    if keyword == "node.js":
+        return bool(re.search(r"(?<![a-z0-9])node[.\s-]?js(?![a-z0-9])", text_lower))
+    return False
+
+
+def _canonical_keyword(keyword: str) -> str:
+    return CANONICAL_KEYWORDS.get(keyword, keyword)
+
+
+def _remove_redundant_keywords(keywords: set[str]) -> set[str]:
+    cleaned = set(keywords)
+    for keyword, stronger_matches in REDUNDANT_KEYWORDS.items():
+        if keyword in cleaned and cleaned.intersection(stronger_matches):
+            cleaned.remove(keyword)
+    return cleaned
+
+
+def _has_repetitive_noise(value: str) -> bool:
+    lowered = value.lower()
+    if re.search(r"([a-z])\1{7,}", lowered):
+        return True
+    compact = re.sub(r"[^a-z]", "", lowered)
+    if len(compact) >= 40 and len(set(compact)) <= 5:
+        return True
+    return False
+
+
+def _looks_like_resume_action_line(value: str) -> bool:
+    normalized = value.strip().lower()
+    if not normalized or len(normalized.split()) < 5:
+        return False
+    if normalized.endswith(":"):
+        return False
+    return normalized.startswith(ACTION_LINE_STARTERS)
 
 
 def _percentage(numerator: float, denominator: int) -> float:

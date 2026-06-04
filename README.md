@@ -15,7 +15,6 @@ Rezumate helps job seekers upload a resume, paste a job description, get ATS-foc
 - `ios/` - native SwiftUI iOS app for App Store release.
 - `app/` + `main.py` - FastAPI backend for auth, upload parsing, ATS scoring, rewrites, history, and export.
 - `web/` - Next.js marketing website with privacy, terms, support, and waitlist pages.
-- `mobile/` - legacy Expo/React Native app kept temporarily until native iOS parity is fully verified.
 
 ## Backend
 
@@ -28,22 +27,36 @@ The API runs at `http://127.0.0.1:8000`.
 
 Important environment variables:
 
-- `DATABASE_URL` - production database URL. Local development falls back to `rezumate.db`.
-- `GROQ_API_KEY` - enables AI bullet rewrites.
+- `APP_ENV` - use `production` for deployed environments.
+- `DATABASE_URL` - hosted PostgreSQL URL in production. Local development falls back to `rezumate.db`.
+- `GROQ_API_KEY` - enables AI analysis refinement and bullet rewrites.
 - `SESSION_SECRET` - signs Rezumate app session tokens.
 - `APPLE_BUNDLE_ID` - validates Sign in with Apple token audience in production.
 - `ALLOW_DEV_APPLE_AUTH` - set to `true` only for local `dev-apple-token:*` auth.
 
+Create local tables or apply production migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
 Key endpoints:
 
 - `GET /api/health`
+- `GET /api/ready`
 - `POST /api/auth/apple`
+- `GET /api/me`
 - `POST /api/upload`
 - `POST /api/analyze`
+- `GET /api/analysis/{variant_id}`
 - `POST /api/rewrite-bullet`
+- `POST /api/accept-rewrite`
 - `GET /api/history`
 - `GET /api/variants/{variant_id}`
 - `POST /api/export`
+- `DELETE /api/account`
+
+See [BACKEND_DEPLOYMENT.md](BACKEND_DEPLOYMENT.md) for production and Vercel deployment.
 
 ## Native iOS App
 

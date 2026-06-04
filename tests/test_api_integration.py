@@ -1,6 +1,5 @@
 import io
 import os
-import uuid
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -11,8 +10,8 @@ from unittest.mock import patch
 os.environ["ALLOW_DEV_APPLE_AUTH"] = "true"
 
 from main import app
-from app.database import Base, get_db, User
-from app.services.auth_service import get_current_user
+from app.database import Base, get_db, JobDescription, Resume, ResumeVariant, User
+from app.services.auth_service import DEV_USER_UUID, get_current_user
 from reportlab.pdfgen import canvas
 
 # --- Test DB Setup ---
@@ -42,8 +41,7 @@ def setup_db():
     Base.metadata.create_all(bind=engine)
     # create the dummy user expected by auth_service mock
     db = TestingSessionLocal()
-    dummy_uuid = uuid.UUID(int=0)
-    user = User(id=dummy_uuid, email="test@example.com", plan_tier="free")
+    user = User(id=DEV_USER_UUID, email="test@example.com", plan_tier="free")
     db.add(user)
     db.commit()
     db.close()
@@ -88,6 +86,15 @@ def test_health_check():
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
+    response = client.get("/api/ready")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready"}
+
+def test_get_account():
+    response = client.get("/api/me", headers={"Authorization": "Bearer dummy-token"})
+    assert response.status_code == 200
+    assert response.json()["email"] == "test@example.com"
+
 def test_full_workflow():
     # 1. Upload Resume
     pdf_bytes = generate_dummy_pdf()
@@ -122,9 +129,32 @@ def test_full_workflow():
     assert analyze_data["success"] is True
     assert "variant_id" in analyze_data
     assert analyze_data["score"] > 0
+    assert analyze_data["analysis_status"] == "pending"
     variant_id = analyze_data["variant_id"]
 
-    # 3. Rewrite Bullet Point (Mocked to avoid Groq API call)
+    # 3. Refine analysis in a request so it is safe on serverless runtimes
+    with patch("app.routes.api.analyze_resume_with_groq") as mock_analyze:
+        def refine(_resume_text, _job_description, baseline):
+            result = dict(baseline)
+            result["score"] = 91
+            result["analysis_source"] = "groq"
+            result["weak_bullets"] = ["Experience: Python, AWS, and APIs."]
+            result["ai_model_name"] = "test-model"
+            return result
+
+        mock_analyze.side_effect = refine
+        response = client.get(
+            f"/api/analysis/{variant_id}",
+            headers={"Authorization": "Bearer dummy-token"},
+        )
+
+    assert response.status_code == 200
+    refined_data = response.json()
+    assert refined_data["analysis_status"] == "complete"
+    assert refined_data["score"] == 91
+    assert refined_data["weak_bullets"] == ["Experience: Python, AWS, and APIs."]
+
+    # 4. Rewrite Bullet Point (Mocked to avoid Groq API call)
     with patch("app.routes.api.rewrite_bullet_point") as mock_rewrite:
         mock_rewrite.return_value = ["Rewritten bullet 1", "Rewritten bullet 2", "Rewritten bullet 3"]
         
@@ -143,7 +173,20 @@ def test_full_workflow():
         assert len(rewrite_data["rewritten_bullets"]) == 3
         assert rewrite_data["rewritten_bullets"][0] == "Rewritten bullet 1"
 
-    # 4. Get History
+    # 5. Apply rewrite to the saved variant
+    response = client.post(
+        "/api/accept-rewrite",
+        json={
+            "variant_id": variant_id,
+            "original_bullet": "Experience: Python, AWS, and APIs.",
+            "rewritten_bullet": "Built Python APIs on AWS for production workloads.",
+        },
+        headers={"Authorization": "Bearer dummy-token"},
+    )
+    assert response.status_code == 200
+    assert "Built Python APIs on AWS" in response.json()["updated_resume_text"]
+
+    # 6. Get History
     response = client.get(
         "/api/history",
         headers={"Authorization": "Bearer dummy-token"}
@@ -155,7 +198,7 @@ def test_full_workflow():
     assert len(history_data["variants"]) == 1
     assert history_data["variants"][0]["id"] == variant_id
 
-    # 5. Get Specific Variant
+    # 7. Get Specific Variant
     response = client.get(
         f"/api/variants/{variant_id}",
         headers={"Authorization": "Bearer dummy-token"}
@@ -165,8 +208,9 @@ def test_full_workflow():
     variant_data = response.json()
     assert variant_data["success"] is True
     assert variant_data["variant"]["id"] == variant_id
+    assert "Built Python APIs on AWS" in variant_data["variant"]["tailored_content"]["raw_text"]
 
-    # 6. Export Variant
+    # 8. Export Variant
     response = client.post(
         "/api/export",
         json={"variant_id": variant_id},
@@ -179,6 +223,18 @@ def test_full_workflow():
     # Verify we got actual PDF bytes back
     assert response.content.startswith(b"%PDF")
 
+    # 9. Delete account and all owned data
+    response = client.delete("/api/account", headers={"Authorization": "Bearer dummy-token"})
+    assert response.status_code == 200
+    assert response.json() == {"success": True}
+
+    db = TestingSessionLocal()
+    assert db.query(User).count() == 0
+    assert db.query(Resume).count() == 0
+    assert db.query(JobDescription).count() == 0
+    assert db.query(ResumeVariant).count() == 0
+    db.close()
+
 def test_upload_invalid_file():
     response = client.post(
         "/api/upload",
@@ -187,3 +243,23 @@ def test_upload_invalid_file():
     )
     assert response.status_code == 400
     assert "Only PDF and DOCX files are supported" in response.json()["detail"]
+
+def test_upload_rejects_oversized_file():
+    response = client.post(
+        "/api/upload",
+        files={"resume_file": ("resume.pdf", b"x" * 4_000_001, "application/pdf")},
+        headers={"Authorization": "Bearer dummy-token"},
+    )
+    assert response.status_code == 413
+
+def test_apple_subject_returns_same_account_when_email_is_missing_later():
+    first = client.post(
+        "/api/auth/apple",
+        json={"identity_token": "dev-apple-token:stable-user", "email": "first@example.com"},
+    ).json()
+    second = client.post(
+        "/api/auth/apple",
+        json={"identity_token": "dev-apple-token:stable-user"},
+    ).json()
+
+    assert first["user"]["id"] == second["user"]["id"]

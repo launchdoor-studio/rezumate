@@ -1,4 +1,5 @@
 import io
+from xml.sax.saxutils import escape
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -48,13 +49,9 @@ def generate_ats_pdf(text_content: str) -> bytes:
             
         # Heuristic for section headers (short, all caps, or bold-like)
         if len(line) < 40 and (line.isupper() or line.endswith(':')):
-            story.append(Paragraph(f"<b>{line}</b>", heading_style))
+            story.append(Paragraph(f"<b>{escape(line)}</b>", heading_style))
         else:
-            # Check if bullet
-            if line.startswith("-") or line.startswith("•"):
-                story.append(Paragraph(line, normal_style))
-            else:
-                story.append(Paragraph(line, normal_style))
+            story.append(Paragraph(escape(line), normal_style))
                 
     doc.build(story)
     

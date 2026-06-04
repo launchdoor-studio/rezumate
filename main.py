@@ -1,17 +1,30 @@
-import os
+from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
+
+from app.config import get_settings, validate_production_settings
+
+
+validate_production_settings()
 
 from app.routes.api import router as api_router
 from app.database import init_db
 
-load_dotenv()
 
-# Initialize database
-init_db()
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    validate_production_settings()
+    if not get_settings().is_production:
+        init_db()
+    yield
 
-app = FastAPI(title="Rezumate API", description="Mobile-First AI-Assisted Resume Optimization API")
+
+app = FastAPI(
+    title="Rezumate API",
+    description="Native iOS resume optimization API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 app.include_router(api_router, prefix="/api")
 
