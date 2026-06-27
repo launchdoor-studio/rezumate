@@ -75,6 +75,8 @@ struct AnalyzeResponse: Codable, Equatable, Hashable {
     let bulletsWithoutMeasurableImpact: [String]
     let formattingWarnings: [String]
     let componentScores: [String: Int]
+    let analysisStatus: String?
+    let aiModelName: String?
 
     enum CodingKeys: String, CodingKey {
         case success
@@ -86,6 +88,8 @@ struct AnalyzeResponse: Codable, Equatable, Hashable {
         case bulletsWithoutMeasurableImpact = "bullets_without_measurable_impact"
         case formattingWarnings = "formatting_warnings"
         case componentScores = "component_scores"
+        case analysisStatus = "analysis_status"
+        case aiModelName = "ai_model_name"
     }
 }
 
@@ -170,3 +174,10 @@ struct TailoredContent: Decodable, Equatable, Hashable {
 struct APIErrorPayload: Decodable {
     let detail: String
 }
+
+struct AcceptRewriteResponse: Decodable {
+    let success: Bool
+    let variantId: UUID
+    let updatedResumeText: String
+}
+

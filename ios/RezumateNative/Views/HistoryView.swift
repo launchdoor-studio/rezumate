@@ -12,7 +12,7 @@ struct HistoryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     if let errorMessage {
-                        ErrorStateView(message: errorMessage) {
+                        OfflineHistoryView(message: errorMessage) {
                             Task { await loadHistory() }
                         }
                     } else if variants.isEmpty && !isLoading {
@@ -61,6 +61,13 @@ struct HistoryView: View {
                                 .rezBrutalShadow()
                             }
                             .buttonStyle(.plain)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    deleteVariant(variant.id)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
                     }
                 }
@@ -123,35 +130,58 @@ struct HistoryView: View {
             errorMessage = error.localizedDescription
         }
     }
+
+    private func deleteVariant(_ id: UUID) {
+        LocalStorageManager.shared.deleteVariant(id: id)
+        variants.removeAll(where: { $0.id == id })
+    }
 }
 
 extension VariantDetail: Identifiable {}
 
-private struct ErrorStateView: View {
+private struct OfflineHistoryView: View {
     let message: String
     let retry: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Could not load history", systemImage: "exclamationmark.triangle.fill")
-                .font(.headline)
-                .foregroundStyle(RezTheme.error)
+        VStack(spacing: 16) {
+            Image(systemName: "clock.badge.questionmark")
+                .font(.system(size: 34, weight: .black))
+                .foregroundStyle(RezTheme.ink)
+                .frame(width: 72, height: 72)
+                .background(RezTheme.blueWash, in: RoundedRectangle(cornerRadius: 8))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(RezTheme.ink, lineWidth: 2)
+                }
 
-            Text(message)
-                .font(.subheadline)
-                .foregroundStyle(RezTheme.muted)
+            VStack(spacing: 7) {
+                Text("History unavailable")
+                    .font(.title3.weight(.black))
+                    .foregroundStyle(RezTheme.ink)
 
-            Button("Try Again", action: retry)
-                .buttonStyle(RezPrimaryButtonStyle())
+                Text("Saved analyses will appear here when the backend is reachable.")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RezTheme.muted)
+                    .multilineTextAlignment(.center)
+
+                Text(message)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RezTheme.muted.opacity(0.78))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+
+            Button("Refresh", action: retry)
+                .buttonStyle(RezSecondaryButtonStyle(fill: RezTheme.warning))
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(22)
+        .frame(maxWidth: .infinity)
         .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(RezTheme.ink, lineWidth: 2)
         }
-        .rezBrutalShadow()
     }
 }
 

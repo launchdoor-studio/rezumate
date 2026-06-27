@@ -1,27 +1,29 @@
 import Link from "next/link";
 
+import { SiteChrome } from "../components/SiteChrome";
+
 export default function TermsPage() {
   return (
-    <main className="shell legal">
-      <Link href="/">← Rezumate</Link>
-      <h1>Terms of Service</h1>
-      <p>Last updated: May 30, 2026</p>
-      <p>
-        Rezumate provides resume parsing, job-description matching, ATS-style scoring, PDF export, and AI-assisted
-        editing suggestions. The service is informational and does not guarantee interviews, job offers, ATS
-        outcomes, recruiter decisions, or hiring results.
-      </p>
-      <p>
-        Users are responsible for ensuring resumes remain accurate and truthful. Rezumate suggestions should not be
-        used to invent employers, credentials, skills, metrics, or experience.
-      </p>
-      <p>
-        Users should only upload resumes and job descriptions they have the right to process. The service may
-        enforce usage limits, rate limits, or access restrictions to protect reliability and operating cost.
-      </p>
-      <p>
-        For support, account help, or data deletion requests, contact aftaab@aftaab.dev.
-      </p>
-    </main>
+    <SiteChrome>
+      <main className="shell legal">
+        <Link href="/" className="legal-back">← Back</Link>
+        <h1>Terms of Service</h1>
+        <p className="legal-meta">Last updated: June 27, 2026</p>
+        <div className="legal-card">
+          <p>
+            Rezumate provides local resume parsing, job-description matching, ATS-style scoring, local PDF exports, and on-device AI-assisted editing suggestions. The app is strictly informational and does not guarantee interviews, job offers, ATS outcomes, recruiter decisions, or hiring results.
+          </p>
+          <p>
+            Users are solely responsible for ensuring their resumes remain accurate and truthful. Rezumate’s local AI suggestions should not be used to invent employers, credentials, skills, metrics, or experience.
+          </p>
+          <p>
+            Since all parsing and optimization run locally on your device, you are responsible for maintaining your device's security and local data backups.
+          </p>
+          <p>
+            For support or questions regarding the app's local operations, contact aftaab@aftaab.dev.
+          </p>
+        </div>
+      </main>
+    </SiteChrome>
   );
 }

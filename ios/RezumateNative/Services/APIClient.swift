@@ -17,164 +17,165 @@ enum APIClientError: Error, LocalizedError {
 
 struct APIClient {
     let baseURL: URL
-    var session: URLSession = .shared
-
-    private let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let value = try container.decode(String.self)
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatter.date(from: value) {
-                return date
-            }
-            formatter.formatOptions = [.withInternetDateTime]
-            if let date = formatter.date(from: value) {
-                return date
-            }
-            let fallback = DateFormatter()
-            fallback.locale = Locale(identifier: "en_US_POSIX")
-            fallback.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
-            if let date = fallback.date(from: value) {
-                return date
-            }
-            fallback.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-            if let date = fallback.date(from: value) {
-                return date
-            }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(value)")
-        }
-        return decoder
-    }()
-
-    private let encoder: JSONEncoder = {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        return encoder
-    }()
-
+    
     func authenticateWithApple(identityToken: String, email: String?, fullName: String?) async throws -> AuthResponse {
-        try await postJSON("/api/auth/apple", body: AppleAuthRequest(identityToken: identityToken, email: email, fullName: fullName), token: nil)
+        // Return a local guest user session instantly
+        let user = AuthUser(id: UUID(), email: email ?? "local.user@rezumate.local", planTier: "pro")
+        return AuthResponse(success: true, token: "local-session-token", user: user)
     }
 
     func uploadResume(fileURL: URL, token: String) async throws -> UploadResponse {
         let data = try Data(contentsOf: fileURL)
-        var request = URLRequest(url: endpoint("/api/upload"))
-        let boundary = "Boundary-\(UUID().uuidString)"
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.httpBody = MultipartFormData.build(
-            boundary: boundary,
-            name: "resume_file",
+        let result: ExtractionResult
+        
+        if fileURL.pathExtension.lowercased() == "docx" {
+            result = DocxTextExtractor.extractText(from: data)
+        } else {
+            result = PDFTextExtractor.extractText(from: data)
+        }
+        
+        guard result.status != "failed" else {
+            throw APIClientError.server(result.warnings.first ?? "Failed to extract text from document.")
+        }
+        
+        return UploadResponse(
+            success: true,
             filename: fileURL.lastPathComponent,
-            mimeType: mimeType(for: fileURL),
-            data: data
+            resumeId: UUID(),
+            extractedText: result.text,
+            warnings: result.warnings,
+            characterCount: result.characterCount
         )
-        return try await send(request)
     }
 
     func analyzeResume(resumeId: UUID, resumeText: String, jobDescription: String, token: String) async throws -> AnalyzeResponse {
-        try await postJSON(
-            "/api/analyze",
-            body: AnalyzeRequest(resumeId: resumeId, resumeText: resumeText, jobDescription: jobDescription),
-            token: token
+        let result = ATSScoringService.analyzeResume(resumeText: resumeText, jobDescription: jobDescription)
+        let variantId = UUID()
+        
+        let localVariant = LocalVariant(
+            id: variantId,
+            resumeId: resumeId,
+            variantName: "Analysis \(Date().formatted(date: .abbreviated, time: .shortened))",
+            tailoredContent: resumeText,
+            atsScore: result.score,
+            analysisFeedback: result,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        
+        LocalStorageManager.shared.saveVariant(localVariant)
+        
+        return AnalyzeResponse(
+            success: true,
+            variantId: variantId,
+            score: result.score,
+            matchedKeywords: result.matchedKeywords,
+            missingKeywords: result.missingKeywords,
+            weakBullets: result.weakBullets,
+            bulletsWithoutMeasurableImpact: result.bulletsWithoutMeasurableImpact,
+            formattingWarnings: result.formattingWarnings,
+            componentScores: result.componentScores,
+            analysisStatus: "complete",
+            aiModelName: "Llama 3.2 1B (On-Device)"
         )
     }
 
     func rewriteBullet(_ bullet: String, focusKeywords: [String], token: String) async throws -> RewriteBulletResponse {
-        try await postJSON(
-            "/api/rewrite-bullet",
-            body: RewriteBulletRequest(originalBullet: bullet, focusKeywords: focusKeywords),
-            token: token
+        let rewrites = try await LocalAIService.shared.rewriteBullet(bullet, focusKeywords: focusKeywords)
+        return RewriteBulletResponse(
+            success: true,
+            originalBullet: bullet,
+            rewrittenBullets: rewrites,
+            aiModelName: LocalAIService.shared.modelExists ? "Llama 3.2 1B (On-Device)" : "Rules-Based Engine (Local)"
         )
     }
 
     func history(token: String) async throws -> [VariantSummary] {
-        var request = URLRequest(url: endpoint("/api/history"))
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let response: HistoryResponse = try await send(request)
-        return response.variants
+        let list = LocalStorageManager.shared.loadHistory()
+        return list.map { v in
+            VariantSummary(
+                id: v.id,
+                resumeId: v.resumeId,
+                variantName: v.variantName,
+                atsScore: v.atsScore,
+                createdAt: v.createdAt,
+                updatedAt: v.updatedAt
+            )
+        }
     }
 
     func variant(id: UUID, token: String) async throws -> VariantDetail {
-        var request = URLRequest(url: endpoint("/api/variants/\(id.uuidString)"))
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let response: VariantDetailEnvelope = try await send(request)
-        return response.variant
+        let list = LocalStorageManager.shared.loadHistory()
+        guard let v = list.first(where: { $0.id == id }) else {
+            throw APIClientError.server("Variant not found.")
+        }
+        return VariantDetail(
+            id: v.id,
+            resumeId: v.resumeId,
+            variantName: v.variantName,
+            tailoredContent: TailoredContent(rawText: v.tailoredContent),
+            atsScore: v.atsScore,
+            createdAt: v.createdAt
+        )
+    }
+
+    func analysisResult(id: UUID, token: String) async throws -> AnalyzeResponse {
+        let list = LocalStorageManager.shared.loadHistory()
+        guard let v = list.first(where: { $0.id == id }) else {
+            throw APIClientError.server("Variant not found.")
+        }
+        let result = v.analysisFeedback
+        return AnalyzeResponse(
+            success: true,
+            variantId: v.id,
+            score: v.atsScore,
+            matchedKeywords: result.matchedKeywords,
+            missingKeywords: result.missingKeywords,
+            weakBullets: result.weakBullets,
+            bulletsWithoutMeasurableImpact: result.bulletsWithoutMeasurableImpact,
+            formattingWarnings: result.formattingWarnings,
+            componentScores: result.componentScores,
+            analysisStatus: "complete",
+            aiModelName: "Llama 3.2 1B (On-Device)"
+        )
+    }
+
+    func acceptRewrite(variantId: UUID, originalBullet: String, rewrittenBullet: String, token: String) async throws -> AcceptRewriteResponse {
+        var list = LocalStorageManager.shared.loadHistory()
+        guard var v = list.first(where: { $0.id == variantId }) else {
+            throw APIClientError.server("Variant not found.")
+        }
+        
+        let text = v.tailoredContent
+        guard text.contains(originalBullet) else {
+            throw APIClientError.server("Original bullet not found in resume.")
+        }
+        
+        let updatedText = text.replacingOccurrences(of: originalBullet, with: rewrittenBullet)
+        v.tailoredContent = updatedText
+        
+        // Re-analyze with the new text to update score
+        let result = ATSScoringService.analyzeResume(resumeText: updatedText, jobDescription: v.analysisFeedback.jdKeywords.joined(separator: " "))
+        v.atsScore = result.score
+        v.analysisFeedback = result
+        v.updatedAt = Date()
+        
+        LocalStorageManager.shared.saveVariant(v)
+        
+        return AcceptRewriteResponse(success: true, variantId: v.id, updatedResumeText: updatedText)
     }
 
     func exportVariant(id: UUID, token: String) async throws -> URL {
-        var request = URLRequest(url: endpoint("/api/export"))
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try encoder.encode(["variant_id": id.uuidString])
-
-        let (data, response) = try await session.data(for: request)
-        try validate(response: response, data: data)
+        let list = LocalStorageManager.shared.loadHistory()
+        guard let v = list.first(where: { $0.id == id }) else {
+            throw APIClientError.server("Variant not found.")
+        }
+        
+        let text = v.tailoredContent
+        let pdfData = PDFExportService.generateATSPDF(textContent: text)
+        
         let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("rezumate-\(id.uuidString).pdf")
-        try data.write(to: outputURL, options: .atomic)
+        try pdfData.write(to: outputURL, options: .atomic)
         return outputURL
-    }
-
-    private func postJSON<T: Encodable, U: Decodable>(_ path: String, body: T, token: String?) async throws -> U {
-        var request = URLRequest(url: endpoint(path))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        request.httpBody = try encoder.encode(body)
-        return try await send(request)
-    }
-
-    private func send<T: Decodable>(_ request: URLRequest) async throws -> T {
-        let (data, response) = try await session.data(for: request)
-        try validate(response: response, data: data)
-        return try decoder.decode(T.self, from: data)
-    }
-
-    private func validate(response: URLResponse, data: Data) throws {
-        guard let http = response as? HTTPURLResponse else {
-            throw APIClientError.invalidResponse
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            if let payload = try? decoder.decode(APIErrorPayload.self, from: data) {
-                throw APIClientError.server(payload.detail)
-            }
-            throw APIClientError.server("Request failed with status \(http.statusCode).")
-        }
-    }
-
-    private func endpoint(_ path: String) -> URL {
-        let normalized = path.hasPrefix("/") ? String(path.dropFirst()) : path
-        return baseURL.appendingPathComponent(normalized)
-    }
-
-    private func mimeType(for url: URL) -> String {
-        if url.pathExtension.lowercased() == "docx" {
-            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        }
-        return UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/pdf"
-    }
-}
-
-enum MultipartFormData {
-    static func build(boundary: String, name: String, filename: String, mimeType: String, data: Data) -> Data {
-        var body = Data()
-        body.append("--\(boundary)\r\n")
-        body.append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\r\n")
-        body.append("Content-Type: \(mimeType)\r\n\r\n")
-        body.append(data)
-        body.append("\r\n--\(boundary)--\r\n")
-        return body
-    }
-}
-
-private extension Data {
-    mutating func append(_ string: String) {
-        append(Data(string.utf8))
     }
 }

@@ -1,36 +1,35 @@
 import Link from "next/link";
 
+import { SiteChrome } from "../components/SiteChrome";
+
 export default function PrivacyPage() {
   return (
-    <main className="shell legal">
-      <Link href="/">← Rezumate</Link>
-      <h1>Privacy Policy</h1>
-      <p>Last updated: May 30, 2026</p>
-      <p>
-        Rezumate helps users analyze resumes against job descriptions and generate improvement suggestions. To
-        provide the service, the app processes the resume file you choose to upload, extracted resume text, job
-        descriptions you paste, analysis results, rewrite requests, export requests, account identifiers, and basic
-        usage counters used for rate limits.
-      </p>
-      <p>
-        The current app supports PDF and DOCX resume uploads. Uploaded files are read by the backend to extract
-        text for analysis. The app stores extracted resume text, job descriptions, generated analysis feedback,
-        tailored resume text, scores, and history records so users can return to prior analyses. The current backend
-        does not save a permanent raw uploaded file URL for normal uploads.
-      </p>
-      <p>
-        Rezumate uses Sign in with Apple for account access. Apple may provide an account identifier and, on first
-        authorization, an email address. Rezumate uses this information to create or find your account and issue an
-        app session token. Local developer sessions may be used only in development builds.
-      </p>
-      <p>
-        AI-assisted rewrites and analysis may be processed by configured backend AI services. Resume suggestions
-        should be reviewed by the user and kept truthful. Exported PDFs are generated from saved tailored text when
-        requested.
-      </p>
-      <p>
-        To request support, account help, or deletion of stored app data, email aftaab@aftaab.dev.
-      </p>
-    </main>
+    <SiteChrome>
+      <main className="shell legal">
+        <Link href="/" className="legal-back">← Back</Link>
+        <h1>Privacy Policy</h1>
+        <p className="legal-meta">Last updated: June 27, 2026</p>
+        <div className="legal-card">
+          <p>
+            <strong>Rezumate is built with a 100% on-device privacy model.</strong> Your resume contains sensitive personal information (such as your phone number, email address, physical address, and full work history). We believe this data should never leave your control.
+          </p>
+          <p>
+            Unlike traditional resume builders or AI services, <strong>Rezumate does not upload your files, parsed resume text, or pasted job descriptions to any external server.</strong> All text parsing, keyword extraction, ATS scoring, and AI bullet optimization are processed entirely locally on your iPhone using Apple's Neural Engine.
+          </p>
+          <p>
+            <strong>Local Data Storage:</strong> All information—including your resume history, scores, missing keywords, and tailored draft variants—is saved locally on your device in secure, encrypted sandboxed storage. We have no external backend databases, run no user tracking analytics, and have zero visibility into your career details.
+          </p>
+          <p>
+            <strong>On-Device AI Models:</strong> Bullet point optimization runs using a quantized Llama 3.2 1B Instruct model directly on your device. The model file is downloaded on-demand from a public Hugging Face CDN link directly into your app's local documents folder. This model runs locally and offline.
+          </p>
+          <p>
+            <strong>Accounts & Sign-Ins:</strong> No account signup is required. You can use the app immediately as a guest. Optional local iCloud sync utilizes your own private Apple iCloud account; we never have access to this data.
+          </p>
+          <p>
+            If you have questions about the app's local operations, or need support, email aftaab@aftaab.dev.
+          </p>
+        </div>
+      </main>
+    </SiteChrome>
   );
 }

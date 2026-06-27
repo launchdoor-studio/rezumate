@@ -24,6 +24,12 @@
 		10000000000000000000000F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000F /* ProfileView.swift */; };
 		100000000000000000000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* Assets.xcassets */; };
 		100000000000000000000011 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011 /* DesignSystem.swift */; };
+		100000000000000000000012 /* PDFTextExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000012 /* PDFTextExtractor.swift */; };
+		100000000000000000000013 /* DocxTextExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000013 /* DocxTextExtractor.swift */; };
+		100000000000000000000014 /* ATSScoringService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000014 /* ATSScoringService.swift */; };
+		100000000000000000000015 /* LocalStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* LocalStorageManager.swift */; };
+		100000000000000000000016 /* PDFExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* PDFExportService.swift */; };
+		100000000000000000000017 /* LocalAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* LocalAIService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +51,12 @@
 		20000000000000000000000F /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/ProfileView.swift; sourceTree = "<group>"; };
 		200000000000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		200000000000000000000011 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/DesignSystem.swift; sourceTree = "<group>"; };
+		200000000000000000000012 /* PDFTextExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/PDFTextExtractor.swift; sourceTree = "<group>"; };
+		200000000000000000000013 /* DocxTextExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/DocxTextExtractor.swift; sourceTree = "<group>"; };
+		200000000000000000000014 /* ATSScoringService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ATSScoringService.swift; sourceTree = "<group>"; };
+		200000000000000000000015 /* LocalStorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/LocalStorageManager.swift; sourceTree = "<group>"; };
+		200000000000000000000016 /* PDFExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/PDFExportService.swift; sourceTree = "<group>"; };
+		200000000000000000000017 /* LocalAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/LocalAIService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -76,6 +88,12 @@
 				20000000000000000000000F /* ProfileView.swift */,
 				200000000000000000000010 /* Assets.xcassets */,
 				200000000000000000000011 /* DesignSystem.swift */,
+				200000000000000000000012 /* PDFTextExtractor.swift */,
+				200000000000000000000013 /* DocxTextExtractor.swift */,
+				200000000000000000000014 /* ATSScoringService.swift */,
+				200000000000000000000015 /* LocalStorageManager.swift */,
+				200000000000000000000016 /* PDFExportService.swift */,
+				200000000000000000000017 /* LocalAIService.swift */,
 			);
 			path = RezumateNative;
 			sourceTree = "<group>";
@@ -184,6 +202,12 @@
 				10000000000000000000000E /* VariantDetailView.swift in Sources */,
 				10000000000000000000000F /* ProfileView.swift in Sources */,
 				100000000000000000000011 /* DesignSystem.swift in Sources */,
+				100000000000000000000012 /* PDFTextExtractor.swift in Sources */,
+				100000000000000000000013 /* DocxTextExtractor.swift in Sources */,
+				100000000000000000000014 /* ATSScoringService.swift in Sources */,
+				100000000000000000000015 /* LocalStorageManager.swift in Sources */,
+				100000000000000000000016 /* PDFExportService.swift in Sources */,
+				100000000000000000000017 /* LocalAIService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

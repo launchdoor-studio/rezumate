@@ -19,16 +19,7 @@ struct AnalyzeView: View {
                     scorePreview
 
                     if let errorMessage {
-                        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                            .font(.callout)
-                            .foregroundStyle(RezTheme.ink)
-                            .padding(14)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(RezTheme.error, in: RoundedRectangle(cornerRadius: 6))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(RezTheme.ink, lineWidth: 2)
-                            }
+                        AnalyzeNoticeView(message: errorMessage)
                     }
                 }
                 .padding()
@@ -360,4 +351,41 @@ struct AnalyzeView: View {
 
 extension AnalyzeResponse: Identifiable {
     var id: UUID { variantId }
+}
+
+private struct AnalyzeNoticeView: View {
+    let message: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 18, weight: .black))
+                .foregroundStyle(RezTheme.ink)
+                .frame(width: 34, height: 34)
+                .background(RezTheme.warning, in: RoundedRectangle(cornerRadius: 6))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(RezTheme.ink, lineWidth: 2)
+                }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Backend unavailable")
+                    .font(.subheadline.weight(.black))
+                    .foregroundStyle(RezTheme.ink)
+                Text(message)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RezTheme.muted)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RezTheme.surface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(RezTheme.ink, lineWidth: 2)
+        }
+    }
 }

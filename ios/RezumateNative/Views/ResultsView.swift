@@ -5,18 +5,26 @@ struct ResultsView: View {
     let result: AnalyzeResponse
 
     @State private var bulletToRewrite = ""
+    @State private var currentResult: AnalyzeResponse
     @State private var rewrites: [String] = []
     @State private var exportedURL: URL?
     @State private var isWorking = false
+    @State private var isRefreshingAnalysis = false
     @State private var errorMessage: String?
+
+    init(result: AnalyzeResponse) {
+        self.result = result
+        _currentResult = State(initialValue: result)
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                refinementNotice
                 scoreHeader
                 componentScores
-                keywordSection(title: "Matched keywords", items: result.matchedKeywords, color: RezTheme.success)
-                keywordSection(title: "Missing keywords", items: result.missingKeywords, color: RezTheme.warning)
+                keywordSection(title: "Matched keywords", items: currentResult.matchedKeywords, color: RezTheme.success)
+                keywordSection(title: "Missing keywords", items: currentResult.missingKeywords, color: RezTheme.warning)
                 bulletsSection
                 rewriteSection
                 exportSection
@@ -35,16 +43,42 @@ struct ResultsView: View {
                 }
             }
             .padding()
+            .padding(.bottom, 180)
         }
         .rezScreenBackground()
         .navigationTitle("Results")
+        .task {
+            await pollForRefinedAnalysis()
+        }
+    }
+
+    private var refinementNotice: some View {
+        Group {
+            if currentResult.analysisStatus == "pending" {
+                RezCard(padding: 14) {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                            .tint(RezTheme.ink)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("AI refinement running")
+                                .font(.subheadline.weight(.black))
+                                .foregroundStyle(RezTheme.ink)
+                            Text("Showing a fast baseline while Groq improves the score and suggestions.")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(RezTheme.muted)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+        }
     }
 
     private var scoreHeader: some View {
         RezCard(padding: 18) {
             HStack(alignment: .center, spacing: 18) {
                 VStack(spacing: 2) {
-                    Text("\(result.score)")
+                    Text("\(currentResult.score)")
                         .font(.system(size: 42, weight: .black))
                         .foregroundStyle(RezTheme.ink)
                     Text("/100")
@@ -78,7 +112,7 @@ struct ResultsView: View {
         RezCard {
             VStack(alignment: .leading, spacing: 14) {
                 SectionTitle("Score breakdown")
-                ForEach(result.componentScores.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
+                ForEach(currentResult.componentScores.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text(key.replacingOccurrences(of: "_", with: " ").capitalized)
@@ -101,11 +135,11 @@ struct ResultsView: View {
     }
 
     private var scoreColor: Color {
-        componentColor(result.score)
+        componentColor(currentResult.score)
     }
 
     private var scoreMessage: String {
-        switch result.score {
+        switch currentResult.score {
         case 80...100: "Strong fit. Polish missing details and export."
         case 60..<80: "Good base. Close keyword and impact gaps."
         default: "Needs tailoring before sending."
@@ -132,6 +166,9 @@ struct ResultsView: View {
                     FlowLayout(items: items) { item in
                         Text(item)
                             .font(.caption.weight(.black))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.82)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
                             .background(color, in: RoundedRectangle(cornerRadius: 4))
@@ -150,12 +187,12 @@ struct ResultsView: View {
         RezCard {
             VStack(alignment: .leading, spacing: 12) {
                 SectionTitle("Weak bullets", subtitle: "Tap one to rewrite")
-                if result.weakBullets.isEmpty {
+                if currentResult.weakBullets.isEmpty {
                     Text("No weak bullets detected.")
                         .font(.subheadline)
                         .foregroundStyle(RezTheme.muted)
                 } else {
-                    ForEach(result.weakBullets, id: \.self) { bullet in
+                    ForEach(currentResult.weakBullets, id: \.self) { bullet in
                         Button {
                             bulletToRewrite = bullet
                         } label: {
@@ -199,8 +236,19 @@ struct ResultsView: View {
                 .disabled(bulletToRewrite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
 
                 ForEach(rewrites, id: \.self) { rewrite in
-                    Text(rewrite)
-                        .font(.subheadline)
+                    Button {
+                        Task { await accept(rewrite) }
+                    } label: {
+                        HStack(alignment: .top) {
+                            Text(rewrite)
+                                .font(.subheadline)
+                                .foregroundStyle(RezTheme.ink)
+                                .multilineTextAlignment(.leading)
+                            Spacer()
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(RezTheme.ink)
+                        }
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(RezTheme.success, in: RoundedRectangle(cornerRadius: 6))
@@ -208,6 +256,8 @@ struct ResultsView: View {
                             RoundedRectangle(cornerRadius: 6)
                                 .stroke(RezTheme.ink, lineWidth: 2)
                         }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -241,8 +291,34 @@ struct ResultsView: View {
         isWorking = true
         errorMessage = nil
         do {
-            let response = try await appState.api.rewriteBullet(bulletToRewrite, focusKeywords: result.missingKeywords, token: token)
+            let response = try await appState.api.rewriteBullet(bulletToRewrite, focusKeywords: currentResult.missingKeywords, token: token)
             rewrites = response.rewrittenBullets
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isWorking = false
+    }
+
+    private func accept(_ rewritten: String) async {
+        guard let token = appState.token else { return }
+        isWorking = true
+        errorMessage = nil
+        do {
+            let response = try await appState.api.acceptRewrite(
+                variantId: currentResult.variantId,
+                originalBullet: bulletToRewrite,
+                rewrittenBullet: rewritten,
+                token: token
+            )
+            
+            // Clean up selections
+            bulletToRewrite = ""
+            rewrites = []
+            
+            // Recalculate analysis using the updated text
+            let reAnalysis = try await appState.api.analysisResult(id: response.variantId, token: token)
+            currentResult = reAnalysis
+            appState.latestAnalysis = reAnalysis
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -254,11 +330,39 @@ struct ResultsView: View {
         isWorking = true
         errorMessage = nil
         do {
-            exportedURL = try await appState.api.exportVariant(id: result.variantId, token: token)
+            exportedURL = try await appState.api.exportVariant(id: currentResult.variantId, token: token)
         } catch {
             errorMessage = error.localizedDescription
         }
         isWorking = false
+    }
+
+    private func pollForRefinedAnalysis() async {
+        guard currentResult.analysisStatus == "pending",
+              let token = appState.token,
+              !isRefreshingAnalysis else {
+            return
+        }
+
+        isRefreshingAnalysis = true
+        defer { isRefreshingAnalysis = false }
+
+        for _ in 0..<20 {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if Task.isCancelled { return }
+
+            do {
+                let refreshed = try await appState.api.analysisResult(id: currentResult.variantId, token: token)
+                currentResult = refreshed
+                appState.latestAnalysis = refreshed
+                if refreshed.analysisStatus != "pending" {
+                    return
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+                return
+            }
+        }
     }
 }
 
@@ -267,9 +371,10 @@ struct FlowLayout<Data: RandomAccessCollection, Content: View>: View where Data.
     let content: (Data.Element) -> Content
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], alignment: .leading, spacing: 8) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 8)], alignment: .leading, spacing: 8) {
             ForEach(Array(items), id: \.self) { item in
                 content(item)
+                    .frame(minHeight: 34)
                     .frame(maxWidth: .infinity)
             }
         }
