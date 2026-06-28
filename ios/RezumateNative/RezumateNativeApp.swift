@@ -8,6 +8,7 @@ struct RezumateNativeApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .preferredColorScheme(.light)
         }
     }
 }
