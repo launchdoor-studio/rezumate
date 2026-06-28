@@ -47,6 +47,24 @@ struct ResultsView: View {
         }
         .rezScreenBackground()
         .navigationTitle("Results")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    Task { await reAnalyze() }
+                } label: {
+                    if isRefreshingAnalysis {
+                        ProgressView()
+                            .tint(RezTheme.ink)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(RezTheme.ink)
+                    }
+                }
+                .disabled(isRefreshingAnalysis)
+                .accessibilityLabel("Re-analyze")
+            }
+        }
         .task {
             await pollForRefinedAnalysis()
         }
@@ -345,6 +363,29 @@ struct ResultsView: View {
             errorMessage = error.localizedDescription
         }
         isWorking = false
+    }
+
+    private func reAnalyze() async {
+        guard let token = appState.token,
+              let upload = appState.upload,
+              !isRefreshingAnalysis else { return }
+        
+        isRefreshingAnalysis = true
+        errorMessage = nil
+        
+        do {
+            let result = try await appState.api.analyzeResume(
+                resumeId: upload.resumeId,
+                resumeText: currentResult.tailoredText,
+                jobDescription: currentResult.jobDescription,
+                token: token
+            )
+            currentResult = result
+            appState.latestAnalysis = result
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isRefreshingAnalysis = false
     }
 
     private func pollForRefinedAnalysis() async {
