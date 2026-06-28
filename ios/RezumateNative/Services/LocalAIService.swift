@@ -20,6 +20,21 @@ class LocalAIService: ObservableObject {
     }
     
     func checkModelExists() {
+        #if targetEnvironment(simulator)
+        if !FileManager.default.fileExists(atPath: modelURL.path),
+           let hostHome = ProcessInfo.processInfo.environment["SIMULATOR_HOST_HOME"] {
+            let macDownloadsPath = hostHome + "/Downloads/Llama-3.2-1B-Instruct-Q4_K_M.gguf"
+            if FileManager.default.fileExists(atPath: macDownloadsPath) {
+                do {
+                    try FileManager.default.copyItem(atPath: macDownloadsPath, toPath: modelURL.path)
+                    print("Simulator DX: Copied model from Mac Downloads to save bandwidth.")
+                } catch {
+                    print("Simulator DX: Failed to copy model: \(error)")
+                }
+            }
+        }
+        #endif
+        
         modelExists = FileManager.default.fileExists(atPath: modelURL.path)
     }
     
