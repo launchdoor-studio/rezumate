@@ -102,19 +102,43 @@ class LocalAIService: ObservableObject {
     }
     
     private func enhanceBulletRuleBased(bullet: String, focusKeywords: [String]) -> [String] {
-        let normalized = bullet.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = bullet.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            return []
+        }
         
-        // Action verbs list
-        let verbs = ["Spearheaded", "Optimized", "Architected", "Engineered", "Designed", "Formulated"]
+        // Remove leading bullet characters if present (e.g. "•", "-", "*")
+        var cleaned = trimmed
+        while cleaned.hasPrefix("•") || cleaned.hasPrefix("-") || cleaned.hasPrefix("*") {
+            cleaned = String(cleaned.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         
-        // Keywords insertion helper
-        let keywordsString = focusKeywords.prefix(2).joined(separator: " and ")
-        let keywordContext = keywordsString.isEmpty ? "scalable solutions" : "\(keywordsString) workflows"
+        // Find the first word to see if it's an action verb we can replace/strengthen
+        let words = cleaned.components(separatedBy: .whitespaces)
+        let firstWord = words.first ?? ""
+        let restOfBullet = words.dropFirst().joined(separator: " ")
         
-        // Create 3 distinct styles
-        let option1 = "Engineered and optimized \(keywordContext) to enhance performance, resolving bottlenecks and improving overall system efficiency."
-        let option2 = "Architected modern integration systems for \(keywordContext), resulting in robust code quality and standardized deployment processes."
-        let option3 = "Spearheaded the technical redesign of \(normalized.prefix(1).lowercased() + normalized.dropFirst()), integrating \(keywordContext) to support scalable business requirements."
+        let verbsToReplace = ["shipped", "built", "created", "developed", "designed", "implemented", "optimized", "integrated", "launched", "led", "maintained", "managed", "worked"]
+        
+        let baseText: String
+        if verbsToReplace.contains(firstWord.lowercased()) && !restOfBullet.isEmpty {
+            baseText = restOfBullet
+        } else {
+            baseText = cleaned
+        }
+        
+        // Select matching keyword contexts
+        let keywordsString = focusKeywords.prefix(2).joined(separator: ", ")
+        let keywordPhrase = keywordsString.isEmpty ? "" : ", integrating \(keywordsString)"
+        
+        // Style 1: Spearheaded + Base + Metrics
+        let option1 = "Spearheaded \(baseText)\(keywordPhrase), improving system efficiency by 20%."
+        
+        // Style 2: Optimized / Streamlined + Base + Scale
+        let option2 = "Optimized \(baseText)\(keywordPhrase), scaling system capability to support 10k+ active users."
+        
+        // Style 3: Designed and Deployed + Base + Quality Metrics
+        let option3 = "Designed and deployed \(baseText)\(keywordPhrase), reducing processing overhead by 35%."
         
         return [option1, option2, option3]
     }
