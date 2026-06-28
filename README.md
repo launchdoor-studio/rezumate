@@ -4,59 +4,28 @@
 
 # Rezumate
 
-**Native iOS resume optimization powered by a FastAPI analysis backend.**
+**100% On-Device, Private Resume Optimization for iOS.**
 
 </div>
 
-Rezumate helps job seekers upload a resume, paste a job description, get ATS-focused feedback, rewrite weak bullets, and export an ATS-safe PDF.
+Rezumate helps job seekers upload a resume, paste a job description, get instant ATS-focused matching, rewrite weak bullet points, and export an ATS-safe PDF—processed entirely locally on their iPhone.
+
+---
+
+## Why On-Device?
+
+Resumes contain highly sensitive personal information, including names, phone numbers, email addresses, and full career history. Standard resume builders upload this data to third-party cloud servers. 
+
+Rezumate processes everything in-memory and stores history in secure, local sandboxed storage on the device. All AI tasks are handled on-device using local models, ensuring complete data privacy.
+
+---
 
 ## Repo Layout
 
-- `ios/` - native SwiftUI iOS app for App Store release.
-- `app/` + `main.py` - FastAPI backend for auth, upload parsing, ATS scoring, rewrites, history, and export.
-- `web/` - Next.js marketing website with privacy, terms, support, and waitlist pages.
+- `ios/` - Native SwiftUI iOS app, built for App Store release.
+- `web/` - Next.js marketing website containing waitlist, privacy, and support pages.
 
-## Backend
-
-```bash
-uv sync
-uv run dev
-```
-
-The API runs at `http://127.0.0.1:8000`.
-
-Important environment variables:
-
-- `APP_ENV` - use `production` for deployed environments.
-- `DATABASE_URL` - hosted PostgreSQL URL in production. Local development falls back to `rezumate.db`.
-- `GROQ_API_KEY` - enables AI analysis refinement and bullet rewrites.
-- `SESSION_SECRET` - signs Rezumate app session tokens.
-- `APPLE_BUNDLE_ID` - validates Sign in with Apple token audience in production.
-- `ALLOW_DEV_APPLE_AUTH` - set to `true` only for local `dev-apple-token:*` auth.
-
-Create local tables or apply production migrations:
-
-```bash
-uv run alembic upgrade head
-```
-
-Key endpoints:
-
-- `GET /api/health`
-- `GET /api/ready`
-- `POST /api/auth/apple`
-- `GET /api/me`
-- `POST /api/upload`
-- `POST /api/analyze`
-- `GET /api/analysis/{variant_id}`
-- `POST /api/rewrite-bullet`
-- `POST /api/accept-rewrite`
-- `GET /api/history`
-- `GET /api/variants/{variant_id}`
-- `POST /api/export`
-- `DELETE /api/account`
-
-See [BACKEND_DEPLOYMENT.md](BACKEND_DEPLOYMENT.md) for production and Vercel deployment.
+---
 
 ## Native iOS App
 
@@ -66,15 +35,16 @@ Open the Xcode project:
 open ios/RezumateNative.xcodeproj
 ```
 
-The Debug build points at `http://127.0.0.1:8000` through `REZUMATE_API_BASE_URL`. The app includes:
+The app runs 100% locally and includes:
+- **Local Document Parsers:** In-memory parsing of PDFs (`PDFKit`) and Word Documents (`DocxTextExtractor` ZIP XML scanner).
+- **Deterministic ATS Scoring:** Local calculations for keyword match, structure quality, and formatting warning checks.
+- **On-Device AI Rewrites:** Powered by a quantized **Llama 3.2 1B Instruct** model running directly on Apple's Neural Engine.
+- **Local Storage:** Saved variants and scoring history are persisted locally in secure, sandboxed storage via JSON structures.
+- **On-Device Export:** Generates clean, selectable, single-column ATS-safe PDFs directly from local SwiftUI layout bounds.
 
-- Sign in with Apple plus a Debug-only local dev session.
-- PDF/DOCX document picker upload.
-- Job description analysis.
-- Result screen with ATS score, keywords, weak bullets, rewrites, and PDF export/share.
-- History and variant detail views.
+*Note: In debug builds, you can click "Use Local Dev Session" to bypass Apple authentication and run the app completely offline immediately.*
 
-Before App Store release, set the production bundle identifier/team, configure Sign in with Apple in the Apple Developer portal, and update the Release API URL.
+---
 
 ## Marketing Website
 
@@ -84,12 +54,4 @@ npm install
 npm run dev
 ```
 
-The website includes the landing page, privacy policy, terms, support, and waitlist pages. It is intended to deploy separately from the API, for example on Vercel.
-
-## Tests
-
-```bash
-uv run pytest
-```
-
-The backend tests cover upload, analyze, rewrite, history, variant detail, export, health checks, and the Apple auth session exchange.
+The marketing site serves as the landing page and waitlist capture. It can be deployed statically to Vercel, Netlify, or similar hosts.
