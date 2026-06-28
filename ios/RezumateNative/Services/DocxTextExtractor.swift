@@ -137,7 +137,7 @@ struct DocxTextExtractor {
                 sourceAddress,
                 compressedData.count,
                 nil,
-                COMPRESSION_DEFLATE
+                COMPRESSION_ZLIB
             )
             
             if decodedSize == uncompressedSize {
