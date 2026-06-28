@@ -375,7 +375,7 @@ struct ResultsView: View {
         
         do {
             let variantDetail = try await appState.api.variant(id: currentResult.variantId, token: token)
-            let currentResumeText = variantDetail.tailoredContent.rawText
+            let currentResumeText = variantDetail.tailoredContent.rawText ?? ""
             
             let result = try await appState.api.analyzeResume(
                 resumeId: upload.resumeId,
