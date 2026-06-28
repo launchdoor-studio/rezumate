@@ -183,16 +183,26 @@ struct ResultsView: View {
         }
     }
 
+    private var improvableBullets: [String] {
+        var list: [String] = []
+        for bullet in currentResult.weakBullets + currentResult.bulletsWithoutMeasurableImpact {
+            if !list.contains(bullet) {
+                list.append(bullet)
+            }
+        }
+        return list
+    }
+
     private var bulletsSection: some View {
         RezCard {
             VStack(alignment: .leading, spacing: 12) {
                 SectionTitle("Weak bullets", subtitle: "Tap one to rewrite")
-                if currentResult.weakBullets.isEmpty {
+                if improvableBullets.isEmpty {
                     Text("No weak bullets detected.")
                         .font(.subheadline)
                         .foregroundStyle(RezTheme.muted)
                 } else {
-                    ForEach(currentResult.weakBullets, id: \.self) { bullet in
+                    ForEach(improvableBullets, id: \.self) { bullet in
                         Button {
                             bulletToRewrite = bullet
                         } label: {
