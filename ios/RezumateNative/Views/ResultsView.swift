@@ -374,10 +374,13 @@ struct ResultsView: View {
         errorMessage = nil
         
         do {
+            let variantDetail = try await appState.api.variant(id: currentResult.variantId, token: token)
+            let currentResumeText = variantDetail.tailoredContent.rawText
+            
             let result = try await appState.api.analyzeResume(
                 resumeId: upload.resumeId,
-                resumeText: currentResult.tailoredText,
-                jobDescription: currentResult.jobDescription,
+                resumeText: currentResumeText,
+                jobDescription: appState.jobDescription,
                 token: token
             )
             currentResult = result
