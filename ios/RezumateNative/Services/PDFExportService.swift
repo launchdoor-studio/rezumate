@@ -40,7 +40,7 @@ struct PDFExportService {
             .paragraphStyle: paragraphStyle
         ]
         
-        let data = renderer.writePDF(toActions: { context in
+        let data = renderer.pdfData { context in
             context.beginPage()
             var currentY = margin
             
@@ -71,7 +71,7 @@ struct PDFExportService {
                 
                 currentY += textHeight + (isHeader ? 5 : 3.5)
             }
-        })
+        }
         
         return data
     }
