@@ -66,7 +66,61 @@ struct PDFTextExtractor {
             previousBlank = isBlank
         }
         
-        return normalizedLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedText = normalizedLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        return deduplicateConsecutiveWords(normalizedText)
+    }
+    
+    static func deduplicateConsecutiveWords(_ text: String) -> String {
+        let lines = text.components(separatedBy: "\n")
+        var cleanedLines: [String] = []
+        
+        for line in lines {
+            let words = line.components(separatedBy: " ")
+            if words.isEmpty {
+                cleanedLines.append("")
+                continue
+            }
+            
+            var cleanedWords: [String] = []
+            var i = 0
+            while i < words.count {
+                let currentWord = words[i]
+                let cleanCurrent = currentWord.trimmingCharacters(in: CharacterSet.alphanumerics.inverted).lowercased()
+                
+                if cleanCurrent.isEmpty {
+                    cleanedWords.append(currentWord)
+                    i += 1
+                    continue
+                }
+                
+                // Count consecutive occurrences
+                var runLength = 1
+                while i + runLength < words.count {
+                    let nextWord = words[i + runLength]
+                    let cleanNext = nextWord.trimmingCharacters(in: CharacterSet.alphanumerics.inverted).lowercased()
+                    if cleanNext == cleanCurrent {
+                        runLength += 1
+                    } else {
+                        break
+                    }
+                }
+                
+                if runLength >= 3 {
+                    // It's a buggy duplicate run (e.g. from layered bold text). Collapse it to a single word.
+                    cleanedWords.append(currentWord)
+                    i += runLength
+                } else {
+                    // Keep the words as is (allows normal repetitions like "had had")
+                    for j in 0..<runLength {
+                        cleanedWords.append(words[i + j])
+                    }
+                    i += runLength
+                }
+            }
+            cleanedLines.append(cleanedWords.joined(separator: " "))
+        }
+        
+        return cleanedLines.joined(separator: "\n")
     }
     
     static func evaluateExtractedText(_ text: String, warnings: [String], pageCount: Int) -> ExtractionResult {
