@@ -4,14 +4,13 @@ struct ResultsView: View {
     @EnvironmentObject private var appState: AppState
     let result: AnalyzeResponse
 
-    @State private var bulletToRewrite = ""
     @State private var currentResult: AnalyzeResponse
-    @State private var rewrites: [String] = []
     @State private var exportedURL: URL?
     @State private var isWorking = false
     @State private var isRefreshingAnalysis = false
     @State private var errorMessage: String?
     @State private var expandedScores: Set<String> = []
+    @State private var rewriteItem: RewriteItem?
 
     init(result: AnalyzeResponse) {
         self.result = result
@@ -27,7 +26,6 @@ struct ResultsView: View {
                 keywordSection(title: "Matched keywords", items: currentResult.matchedKeywords, color: RezTheme.success)
                 keywordSection(title: "Missing keywords", items: currentResult.missingKeywords, color: RezTheme.warning)
                 bulletsSection
-                rewriteSection
                 exportSection
 
                 if let errorMessage {
@@ -65,6 +63,16 @@ struct ResultsView: View {
                 .disabled(isRefreshingAnalysis)
                 .accessibilityLabel("Re-analyze")
             }
+        }
+        .sheet(item: $rewriteItem) { item in
+            BulletRewriteSheet(
+                originalBullet: item.bullet,
+                missingKeywords: currentResult.missingKeywords,
+                appState: appState,
+                onAccept: { newBullet in
+                    accept(original: item.bullet, rewritten: newBullet)
+                }
+            )
         }
         .task {
             await pollForRefinedAnalysis()
@@ -325,7 +333,7 @@ struct ResultsView: View {
                 } else {
                     ForEach(improvableBullets, id: \.self) { bullet in
                         Button {
-                            bulletToRewrite = bullet
+                            rewriteItem = RewriteItem(bullet: bullet)
                         } label: {
                             HStack(alignment: .top, spacing: 10) {
                                 Image(systemName: "wand.and.stars")
@@ -344,51 +352,6 @@ struct ResultsView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                }
-            }
-        }
-    }
-
-    private var rewriteSection: some View {
-        RezCard {
-            VStack(alignment: .leading, spacing: 12) {
-                SectionTitle("Rewrite a bullet")
-                TextEditor(text: $bulletToRewrite)
-                    .frame(minHeight: 110)
-                    .padding(10)
-                    .scrollContentBackground(.hidden)
-                    .rezInputSurface()
-                Button {
-                    Task { await rewrite() }
-                } label: {
-                    Label(isWorking ? "Rewriting..." : "Rewrite bullet", systemImage: "sparkles")
-                }
-                .buttonStyle(RezPrimaryButtonStyle())
-                .disabled(bulletToRewrite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
-
-                ForEach(rewrites, id: \.self) { rewrite in
-                    Button {
-                        Task { await accept(rewrite) }
-                    } label: {
-                        HStack(alignment: .top) {
-                            Text(rewrite)
-                                .font(.subheadline)
-                                .foregroundStyle(RezTheme.ink)
-                                .multilineTextAlignment(.leading)
-                            Spacer()
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(RezTheme.ink)
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RezTheme.success, in: RoundedRectangle(cornerRadius: 6))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(RezTheme.ink, lineWidth: 2)
-                        }
-                    }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -417,43 +380,35 @@ struct ResultsView: View {
         }
     }
 
-    private func rewrite() async {
+    private func accept(original: String, rewritten: String) {
         guard let token = appState.token else { return }
         isWorking = true
         errorMessage = nil
-        do {
-            let response = try await appState.api.rewriteBullet(bulletToRewrite, focusKeywords: currentResult.missingKeywords, token: token)
-            rewrites = response.rewrittenBullets
-        } catch {
-            errorMessage = error.localizedDescription
+        
+        Task {
+            do {
+                let response = try await appState.api.acceptRewrite(
+                    variantId: currentResult.variantId,
+                    originalBullet: original,
+                    rewrittenBullet: rewritten,
+                    token: token
+                )
+                
+                // Recalculate analysis using the updated text
+                let reAnalysis = try await appState.api.analysisResult(id: response.variantId, token: token)
+                
+                DispatchQueue.main.async {
+                    currentResult = reAnalysis
+                    appState.latestAnalysis = reAnalysis
+                    isWorking = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    errorMessage = error.localizedDescription
+                    isWorking = false
+                }
+            }
         }
-        isWorking = false
-    }
-
-    private func accept(_ rewritten: String) async {
-        guard let token = appState.token else { return }
-        isWorking = true
-        errorMessage = nil
-        do {
-            let response = try await appState.api.acceptRewrite(
-                variantId: currentResult.variantId,
-                originalBullet: bulletToRewrite,
-                rewrittenBullet: rewritten,
-                token: token
-            )
-            
-            // Clean up selections
-            bulletToRewrite = ""
-            rewrites = []
-            
-            // Recalculate analysis using the updated text
-            let reAnalysis = try await appState.api.analysisResult(id: response.variantId, token: token)
-            currentResult = reAnalysis
-            appState.latestAnalysis = reAnalysis
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        isWorking = false
     }
 
     private func export() async {
@@ -535,5 +490,147 @@ struct FlowLayout<Data: RandomAccessCollection, Content: View>: View where Data.
                     .frame(maxWidth: .infinity)
             }
         }
+    }
+}
+
+struct RewriteItem: Identifiable {
+    let id = UUID()
+    let bullet: String
+}
+
+struct BulletRewriteSheet: View {
+    let originalBullet: String
+    let missingKeywords: [String]
+    let appState: AppState
+    let onAccept: (String) -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var bulletText: String
+    @State private var suggestions: [String] = []
+    @State private var isWorking = false
+    @State private var errorMessage: String?
+    
+    init(originalBullet: String, missingKeywords: [String], appState: AppState, onAccept: @escaping (String) -> Void) {
+        self.originalBullet = originalBullet
+        self.missingKeywords = missingKeywords
+        self.appState = appState
+        self.onAccept = onAccept
+        _bulletText = State(initialValue: originalBullet)
+    }
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("EDIT ORIGINAL BULLET")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(RezTheme.muted)
+                        
+                        TextEditor(text: $bulletText)
+                            .frame(minHeight: 96)
+                            .padding(10)
+                            .scrollContentBackground(.hidden)
+                            .rezInputSurface()
+                    }
+                    
+                    Button {
+                        Task { await generateRewrites() }
+                    } label: {
+                        HStack {
+                            if isWorking {
+                                ProgressView()
+                                    .tint(RezTheme.ink)
+                                    .padding(.trailing, 6)
+                            } else {
+                                Image(systemName: "sparkles")
+                            }
+                            Text(isWorking ? "Optimizing..." : "Optimize with Llama")
+                        }
+                    }
+                    .buttonStyle(RezPrimaryButtonStyle())
+                    .disabled(bulletText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
+                    
+                    if let errorMessage {
+                        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(RezTheme.ink)
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RezTheme.error, in: RoundedRectangle(cornerRadius: 6))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(RezTheme.ink, lineWidth: 1.5)
+                            }
+                    }
+                    
+                    if !suggestions.isEmpty {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("SUGGESTED REWRITES (TAP TO ACCEPT)")
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundStyle(RezTheme.muted)
+                            
+                            ForEach(suggestions, id: \.self) { suggestion in
+                                Button {
+                                    onAccept(suggestion)
+                                    dismiss()
+                                } label: {
+                                    HStack(alignment: .top, spacing: 10) {
+                                        Text(suggestion)
+                                            .font(.subheadline)
+                                            .foregroundStyle(RezTheme.ink)
+                                            .multilineTextAlignment(.leading)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                        Image(systemName: "checkmark.circle")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundStyle(RezTheme.link)
+                                    }
+                                    .padding(12)
+                                    .background(RezTheme.elevatedSurface, in: RoundedRectangle(cornerRadius: 6))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(RezTheme.border, lineWidth: 2)
+                                    }
+                                    .rezBrutalShadow(x: 2, y: 2)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+            .rezScreenBackground()
+            .navigationTitle("Optimize Bullet")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .font(.body.weight(.bold))
+                    .foregroundStyle(RezTheme.ink)
+                }
+            }
+            .task {
+                // Auto-trigger rewrite on open to make it extremely fast!
+                await generateRewrites()
+            }
+        }
+        .preferredColorScheme(.light)
+    }
+    
+    private func generateRewrites() async {
+        guard let token = appState.token else { return }
+        isWorking = true
+        errorMessage = nil
+        do {
+            let response = try await appState.api.rewriteBullet(bulletText, focusKeywords: missingKeywords, token: token)
+            suggestions = response.rewrittenBullets
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isWorking = false
     }
 }
