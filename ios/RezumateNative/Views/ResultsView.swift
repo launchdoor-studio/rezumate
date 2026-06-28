@@ -11,6 +11,7 @@ struct ResultsView: View {
     @State private var isWorking = false
     @State private var isRefreshingAnalysis = false
     @State private var errorMessage: String?
+    @State private var expandedScores: Set<String> = []
 
     init(result: AnalyzeResponse) {
         self.result = result
@@ -128,27 +129,129 @@ struct ResultsView: View {
 
     private var componentScores: some View {
         RezCard {
-            VStack(alignment: .leading, spacing: 14) {
-                SectionTitle("Score breakdown")
+            VStack(alignment: .leading, spacing: 16) {
+                SectionTitle("Score breakdown", subtitle: "Tap a score for details & diagnosis")
                 ForEach(currentResult.componentScores.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
+                    let isExpanded = expandedScores.contains(key)
                     VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text(key.replacingOccurrences(of: "_", with: " ").capitalized)
-                                .font(.caption.weight(.semibold))
-                            Spacer()
-                            Text("\(value)")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(RezTheme.ink)
-                        }
-                        ProgressView(value: Double(value), total: 100)
-                            .tint(componentColor(value))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 2)
-                                    .stroke(RezTheme.ink.opacity(0.4), lineWidth: 1)
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                if isExpanded {
+                                    expandedScores.remove(key)
+                                } else {
+                                    expandedScores.insert(key)
+                                }
                             }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    Text(key.replacingOccurrences(of: "_", with: " ").capitalized)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RezTheme.ink)
+                                    Spacer()
+                                    HStack(spacing: 4) {
+                                        Text("\(value)")
+                                            .font(.caption.weight(.bold))
+                                            .foregroundStyle(RezTheme.ink)
+                                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundStyle(RezTheme.muted)
+                                    }
+                                }
+                                ProgressView(value: Double(value), total: 100)
+                                    .tint(componentColor(value))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(RezTheme.ink.opacity(0.4), lineWidth: 1)
+                                    }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        
+                        if isExpanded {
+                            VStack(alignment: .leading, spacing: 10) {
+                                let (importance, explanation) = scoreDetails(for: key)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("WHY IT MATTERS")
+                                        .font(.system(size: 8, weight: .black))
+                                        .foregroundStyle(RezTheme.muted)
+                                    Text(importance)
+                                        .font(.caption)
+                                        .foregroundStyle(RezTheme.ink)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                
+                                Divider()
+                                    .background(RezTheme.ink)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("DIAGNOSIS & FEEDBACK")
+                                        .font(.system(size: 8, weight: .black))
+                                        .foregroundStyle(RezTheme.muted)
+                                    Text(explanation)
+                                        .font(.caption)
+                                        .foregroundStyle(RezTheme.ink)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            .padding(10)
+                            .background(RezTheme.appBackground, in: RoundedRectangle(cornerRadius: 6))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(RezTheme.ink, lineWidth: 1.5)
+                            }
+                            .padding(.top, 4)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+                    if key != currentResult.componentScores.sorted(by: { $0.key < $1.key }).last?.key {
+                        Divider()
+                            .background(RezTheme.ink.opacity(0.2))
+                            .padding(.vertical, 4)
                     }
                 }
             }
+        }
+    }
+
+    private func scoreDetails(for key: String) -> (String, String) {
+        switch key {
+        case "formatting_risk":
+            let importance = "Most hiring pipelines run resumes through digital parser APIs. If a file has complex layouts, multi-column tables, or unreadable characters, it won't load into recruiter databases correctly."
+            let explanation: String
+            if currentResult.formattingWarnings.isEmpty {
+                explanation = "Excellent! Your resume layout passed all formatting parser rules and is fully optimized for digital importing."
+            } else {
+                explanation = "Your resume has \(currentResult.formattingWarnings.count) formatting risk(s) that might disrupt digital parsers: \(currentResult.formattingWarnings.joined(separator: ", "))."
+            }
+            return (importance, explanation)
+            
+        case "impact_quality":
+            let importance = "Human recruiters spend only 6 seconds scanning a resume. Bullet points containing metrics (percentages, numbers, scale) capture their attention instantly and prove the outcome of your work, rather than just listing daily tasks."
+            let bulletsWithImpact = currentResult.bulletCount - currentResult.bulletsWithoutMeasurableImpact.count
+            let explanation = "Only \(bulletsWithImpact) out of \(currentResult.bulletCount) bullets contain quantifiable metrics. Add numbers, percentages, or scale units to the remaining \(currentResult.bulletsWithoutMeasurableImpact.count) bullets to improve."
+            return (importance, explanation)
+            
+        case "keyword_coverage":
+            let importance = "ATS systems rank applications based on keyword density. If your resume lacks the specific skills, languages, and tools requested in the job description, you won't surface in recruiter searches."
+            let totalKeywords = currentResult.matchedKeywords.count + currentResult.missingKeywords.count
+            let explanation = "Matched \(currentResult.matchedKeywords.count) out of \(totalKeywords) keywords requested by the employer (\(currentResult.keywordCoverage)% coverage). Incorporate the missing skills shown below to rank higher."
+            return (importance, explanation)
+            
+        case "structure_readability":
+            let importance = "Clear document sections ensure automatic parsers can index your experiences correctly, and help humans scan your career timeline. Missing sections like Education or Skills hurt readability."
+            let missing = currentResult.sections.filter { !$0.value }.map { $0.key.capitalized }
+            let explanation: String
+            if missing.isEmpty {
+                explanation = "Excellent. All standard resume sections (Summary, Experience, Projects, Skills, and Education) are clearly present and parseable."
+            } else {
+                explanation = "Missing or unparseable section(s): \(missing.joined(separator: ", ")). Check your headers so automatic parsers map your work history correctly."
+            }
+            return (importance, explanation)
+            
+        default:
+            return ("", "")
         }
     }
 
