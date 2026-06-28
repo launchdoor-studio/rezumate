@@ -77,6 +77,9 @@ struct AnalyzeResponse: Codable, Equatable, Hashable {
     let componentScores: [String: Int]
     let analysisStatus: String?
     let aiModelName: String?
+    let bulletCount: Int
+    let keywordCoverage: Int
+    let sections: [String: Bool]
 
     enum CodingKeys: String, CodingKey {
         case success
@@ -90,6 +93,9 @@ struct AnalyzeResponse: Codable, Equatable, Hashable {
         case componentScores = "component_scores"
         case analysisStatus = "analysis_status"
         case aiModelName = "ai_model_name"
+        case bulletCount = "bullet_count"
+        case keywordCoverage = "keyword_coverage"
+        case sections
     }
 }
 

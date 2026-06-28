@@ -76,7 +76,10 @@ struct APIClient {
             formattingWarnings: result.formattingWarnings,
             componentScores: result.componentScores,
             analysisStatus: "complete",
-            aiModelName: "Llama 3.2 1B (On-Device)"
+            aiModelName: "Llama 3.2 1B (On-Device)",
+            bulletCount: result.bulletCount,
+            keywordCoverage: result.keywordCoverage,
+            sections: result.sections
         )
     }
 
@@ -136,7 +139,10 @@ struct APIClient {
             formattingWarnings: result.formattingWarnings,
             componentScores: result.componentScores,
             analysisStatus: "complete",
-            aiModelName: "Llama 3.2 1B (On-Device)"
+            aiModelName: "Llama 3.2 1B (On-Device)",
+            bulletCount: result.bulletCount,
+            keywordCoverage: result.keywordCoverage,
+            sections: result.sections
         )
     }
 
